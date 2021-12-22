@@ -8,10 +8,42 @@ using System.Threading.Tasks;
 
 namespace BloodierBot.Services
 {
+  // TODO turn downloadstring into downloadstringasync
   public class Fumbbl
   {
     public const string API_GET_LIVE_GAMES = "https://fumbbl.com/api/match/current";
     public const string API_GET_MATCH_INFO = "https://fumbbl.com/api/match/get/3725357";
+
+    public async Task<String> CallFumbblApi(string query)
+    {
+      string result = null;
+      Uri uri = new Uri(query);
+
+      try
+      {
+        using (var webclient = new WebClient())
+        {
+          // Handle Download Completed Event
+          webclient.DownloadStringCompleted += async (sender, e) =>
+          {
+            if (e.Result != null)
+            {
+              result = e.Result;
+            }
+          };
+
+          // Download the resource
+          result = await webclient.DownloadStringTaskAsync(uri);
+        }
+      }
+      catch (WebException e)
+      {
+        // TODO log
+        Console.WriteLine("ERROR -> " + e.Message);
+      }
+
+      return result;
+    }
 
     public void GetMatchInfo()
     {
@@ -36,35 +68,88 @@ namespace BloodierBot.Services
         }
       }
     }
+
+
+    /// boxtrophy
+
+    #region Coach Section
+
+    public const string API_GET_COACH_INFORMATION = "https://fumbbl.com/api/coach/g3t/";
+
+    /// <summary>
+    /// Find Coach by ID
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns>Coach object, or null Coach object if coach was not found</returns>
+    public async Task<Coach> GetCoach(int id)
+    {
+      string result = null;
+      Coach coach = null;
+
+      try
+      {
+        using (WebClient webclient = new WebClient())
+        {
+          // Handle Download Completed Event
+          webclient.DownloadStringCompleted += async (sender, e) =>
+          {
+            if (e.Result != null)
+            {
+              result = e.Result;
+            }
+          };
+
+          // Download the resource
+          result = await webclient.DownloadStringTaskAsync(new Uri(API_GET_COACH_INFORMATION + id.ToString()));
+        }
+      }
+      // 
+      catch (WebException e)
+      {
+        Console.WriteLine("ERROR -> "+e.Message);
+      }
+
+      if (result != null)
+      {
+        if (!result.StartsWith("\"Error:"))
+        {
+          Console.WriteLine(result);
+          coach = JsonSerializer.Deserialize<Coach>(result);
+        }
+        else
+        {
+          Console.WriteLine(result);
+        }
+      }
+      return coach;
+    }
+    #endregion
+
+    #region Group Section
+    #endregion
+
+    // match
+
+    // oauth
+
+    // player
+
+    // playerimage
+
+    // position
+
+    // roster
+
+    // ruleset
+
+    // skill
+
+    // stats
+
+    // team
+
+    // tournament
   }
-
-  /// boxtrophy
-
-  // coach
-
-  // group
-
-  // match
-
-  // oauth
-
-  // player
-
-  // playerimage
-
-  // position
-
-  // roster
-
-  // ruleset
-
-  // skill
-
-  // stats
-
-  // team
-
-  // tournament
 
   public class RunningGame
   {
@@ -132,5 +217,11 @@ namespace BloodierBot.Services
     public int bh { get; set; }
     public int si { get; set; }
     public int rip { get; set; }
+  }
+
+  public class IdNamePair
+  {
+    public int id { get; set; }
+    public string name { get; set; }
   }
 }

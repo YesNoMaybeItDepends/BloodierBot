@@ -62,8 +62,8 @@ public partial class Program
   public async Task MainAsync()
   {
     // fumbbl stuff
-    fumbblapi api = new fumbblapi();
-    api.GetLiveGames();
+    Fumbbl fumbbl = new Fumbbl();
+    fumbbl.GetLiveGames();
 
     using (ServiceProvider services = ConfigureServices())
     {
