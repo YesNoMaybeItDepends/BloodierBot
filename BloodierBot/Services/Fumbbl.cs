@@ -11,7 +11,7 @@ namespace BloodierBot.Services
   // TODO turn downloadstring into downloadstringasync
   public class Fumbbl
   {
-    public const string API_GET_LIVE_GAMES = "https://fumbbl.com/api/match/current";
+
     public const string API_GET_MATCH_INFO = "https://fumbbl.com/api/match/get/3725357";
 
     public async Task<String> CallFumbblApi(string query)
@@ -55,7 +55,7 @@ namespace BloodierBot.Services
       }
     }
 
-    public void GetLiveGames()
+    public void GetLiveGamesssss()
     {
       using (WebClient webclient = new WebClient())
       {
@@ -69,8 +69,20 @@ namespace BloodierBot.Services
       }
     }
 
+    public bool IsError(string result)
+    {
+      if (result.StartsWith("\"Error:"))
+      {
+        return true;
+      }
+      else
+      {
+        return false;
+      }
+    }
 
-    /// boxtrophy
+    #region boxtrophy
+    #endregion
 
     #region Coach Section
 
@@ -128,7 +140,36 @@ namespace BloodierBot.Services
     #region Group Section
     #endregion
 
-    // match
+    #region match
+
+    public const string API_GET_LIVE_GAMES = "https://fumbbl.com/api/match/current";
+    
+    public async Task<List<RunningGame>> GetLiveGames()
+    {
+      string result = null;
+      List<RunningGame> runningGames = new List<RunningGame>();
+
+      result = await CallFumbblApi(API_GET_LIVE_GAMES);
+    
+      if (result == null)
+      {
+        // TODO Fumbbl Error
+        return runningGames;
+      }
+      else if (IsError(result))
+      {
+        // TODO API Error
+        return runningGames;
+      }
+      else
+      {
+        // Got the games
+        runningGames = JsonSerializer.Deserialize<List<RunningGame>>(result);
+      }
+      // TODO fix this
+      return runningGames;
+    }
+    #endregion
 
     // oauth
 

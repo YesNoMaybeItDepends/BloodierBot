@@ -6,6 +6,7 @@ namespace BloodierBot.Database
   public partial class BloodierBotEntities : DbContext
   {
     public virtual DbSet<EightBallAnswer> EightBallAnswer { get; set;}
+    public virtual DbSet<RunningGame> RunningGame { get; set;}
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {

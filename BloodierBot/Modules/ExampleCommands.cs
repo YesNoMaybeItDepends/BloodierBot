@@ -73,6 +73,32 @@ namespace BloodierBot.Modules
 
       await ReplyAsync(sb.ToString());
     }
+
+    [Command("Live")]
+    [RequireOwner]
+    public async Task Live()
+    {
+      var sb = new StringBuilder();
+      Fumbbl fumbbl = new Fumbbl();
+
+      var games = await fumbbl.GetLiveGames();
+
+      if (games != null)
+      {
+        foreach (var game in games)
+        {
+          sb.AppendLine($"{game.teams[0].name} vs {game.teams[1].name}");
+          sb.AppendLine("https://fumbbl.com/ffblive.jnlp?spectate="+game.id);
+          sb.AppendLine();
+        }
+      }
+      else
+      {
+        sb.AppendLine("No live games found");
+      }
+
+      await ReplyAsync(sb.ToString());
+    }
   }
 }
 
