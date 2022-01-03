@@ -8,8 +8,13 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
-
+using System.Drawing;
 using BloodierBot.Services;
+using System.Data;
+using System.Data.SQLite;
+using Dapper;
+using System.Net;
+using BloodierBot.Database.Models;
 
 namespace BloodierBot.Modules
 {
@@ -54,7 +59,7 @@ namespace BloodierBot.Modules
       // Check if arg is a number, discard result of tryparse (out _)
       else if (int.TryParse(args, out _))
       {
-        var fumbbl = new Fumbbl();
+        var fumbbl = new FumbblApi();
 
         Coach coach = await fumbbl.GetCoach(int.Parse(args));
         if (coach != null)
@@ -79,16 +84,16 @@ namespace BloodierBot.Modules
     public async Task Live()
     {
       var sb = new StringBuilder();
-      Fumbbl fumbbl = new Fumbbl();
+      FumbblApi fumbbl = new FumbblApi();
 
-      var games = await fumbbl.GetLiveGames();
+      var games = await fumbbl.GetRunningGames();
 
       if (games != null)
       {
         foreach (var game in games)
         {
           sb.AppendLine($"{game.teams[0].name} vs {game.teams[1].name}");
-          sb.AppendLine("https://fumbbl.com/ffblive.jnlp?spectate="+game.id);
+          sb.AppendLine("https://fumbbl.com/ffblive.jnlp?spectate="+game.RunningGame_Id);
           sb.AppendLine();
         }
       }
@@ -98,6 +103,85 @@ namespace BloodierBot.Modules
       }
 
       await ReplyAsync(sb.ToString());
+    }
+
+    [Command("load coaches")]
+    [RequireOwner]
+    public async Task LoadCoaches()
+    {
+      StringBuilder sb = new StringBuilder();
+
+      string connectionString = @"Data Source=.\BloodierBot.db";
+      using (IDbConnection db = new SQLiteConnection(connectionString))
+      {
+        //db.Open();
+        //var command = new SQLiteCommand("Select * from Coach");
+        //command.Execute
+        var output = db.Query<Coach>("Select * from Coach").ToList();
+        foreach(var meme in output)
+        {
+          sb.AppendLine(meme.name);
+        }
+      }
+
+      await ReplyAsync(sb.ToString());
+    }
+
+    [Command("save coach")]
+    [RequireOwner]
+    public async Task SaveOwner([Remainder] string args = null)
+    {
+      Console.WriteLine(args);
+      args = "meme";
+      string connectionString = @"Data Source=.\BloodierBot.db";
+      using (IDbConnection db = new SQLiteConnection(connectionString))
+      {
+        //db.Open();
+        //SQLiteCommand command = new SQLiteCommand("Insert into Coach (Name) values (@Name)", db);
+        //command.Parameters.AddWithValue("@Name", args);
+        //command.ExecuteNonQuery();
+        //db.Close();
+        DynamicParameters parameters = new DynamicParameters();
+        parameters.Add("Name", "lol", DbType.String, ParameterDirection.Input);
+        db.Execute("Insert into Coach (Name) values (@Name)", parameters);
+      }
+
+      return;
+    }
+
+    [Command("testma")]
+    [RequireOwner]
+    public async Task Testma()
+    {
+      var eb = new EmbedBuilder();
+      
+      // Fields
+      var header = new EmbedFieldBuilder();
+      header.WithName(":eye::eye:");
+      header.WithValue("**Frosted Furry Fillers** vs **First World Chaos**");
+      var team1 = new EmbedFieldBuilder();
+      team1.WithIsInline(true);
+      team1.Name = "antg";
+      team1.Value = "Skaven \n 1400";
+      var team2 = new EmbedFieldBuilder();
+      team2.WithIsInline(true);
+      team2.Name = "Domunperg";
+      team2.Value = "Chaos Chosen \n 1400";
+      
+      eb.WithThumbnailUrl("https://i.imgur.com/QTzpQlD.png");
+      eb.WithColor(Discord.Color.DarkPurple);
+      eb.WithTitle("Spectate Game");
+      eb.WithUrl("https://i.imgur.com/QTzpQlD.png");
+      //eb.WithDescription("lmao");
+      
+      eb.AddField(header);
+      eb.AddField(team1);
+      eb.AddField(team2);
+
+      //eb.WithImageUrl("https://i.imgur.com/Fa2VtT6.jpg");
+      var e = eb.Build();
+
+      await ReplyAsync("@Lazyfan", embed: e);
     }
   }
 }

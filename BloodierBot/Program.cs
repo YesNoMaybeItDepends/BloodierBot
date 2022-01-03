@@ -1,14 +1,4 @@
-﻿/*
-    Get Group Tournaments
-    Get Tournament Schedule
-    Get Live Games
-
-https://docs.stillu.cc/guides/text_commands/intro.html
-https://fumbbl.com/apidoc/#/match/get_match_get__matchId_
-https://www.gngrninja.com/code/2020/7/15/c-discord-bot-adding-a-database
- */
-
-using System.Net;
+﻿using System.Net;
 using System.Text.Json;
 using System.Collections.Generic;
 using Discord;
@@ -27,12 +17,12 @@ using Serilog;
 using Microsoft.Extensions.Logging;
 using BloodierBot.Database;
 
-// main
 public partial class Program
 {
   private DiscordSocketClient _client;
   private readonly IConfiguration _config;
   private static string _logLevel;
+  private static bool _dbmode = false;
 
   public Program()
   {
@@ -48,7 +38,14 @@ public partial class Program
   {
     if (args.Count() != 0)
     {
-      _logLevel = args[0];
+      if (args[0] == "dbmode")
+      {
+        _dbmode = true;
+      }
+      else
+      {
+        _logLevel = args[0];
+      }
     }
 
     Log.Logger = new LoggerConfiguration()
@@ -62,8 +59,8 @@ public partial class Program
   public async Task MainAsync()
   {
     // fumbbl stuff
-    Fumbbl fumbbl = new Fumbbl();
-    fumbbl.GetLiveGames();
+    //FumbblApi fumbbl = new FumbblApi();
+    //fumbbl.GetLiveGames();
 
     using (ServiceProvider services = ConfigureServices())
     {
@@ -79,8 +76,25 @@ public partial class Program
 
       await services.GetRequiredService<CommandHandler>().InitializeAsync();
 
-      //await Task.Delay(10000);
-      await Task.Delay(-1);
+
+      _client.Ready += () =>
+      {
+        Console.WriteLine("client ready");
+        
+        Task.Run(async () => { await services.GetRequiredService<Fumbbl>().run(); });
+        Console.WriteLine("fumbbl done");
+        return Task.CompletedTask;
+      };
+
+
+      if (_dbmode)
+      {
+        await Task.Delay(1000);
+      } 
+      else
+      {
+        await Task.Delay(-1);
+      }
     }
   }
 
@@ -92,7 +106,9 @@ public partial class Program
       .AddSingleton<CommandService>()
       .AddSingleton<CommandHandler>()
       .AddSingleton<LoggingService>()
-      .AddDbContext<BloodierBotEntities>()
+      .AddSingleton<Fumbbl>()
+      .AddSingleton<FumbblApi>()
+      //.AddDbContext<BloodierBotContext>()
       .AddLogging(configure => configure.AddSerilog());
       
     if (!string.IsNullOrEmpty(_logLevel))

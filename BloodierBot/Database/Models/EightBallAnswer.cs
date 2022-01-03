@@ -1,7 +1,7 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace BloodierBot.Database
+namespace BloodierBot.Database.Models
 {
   public partial class EightBallAnswer
   {
