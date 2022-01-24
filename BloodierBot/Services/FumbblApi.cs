@@ -13,7 +13,7 @@ namespace BloodierBot.Services
   public class FumbblApi
   {
 
-    public const string API_GET_MATCH_INFO = "https://fumbbl.com/api/match/get/3725357";
+    public const string API_GET_MATCH_INFO = "https://fumbbl.com/api/match/get/";
 
     public async Task<String> CallFumbblApi(string query)
     {
@@ -46,27 +46,25 @@ namespace BloodierBot.Services
       return result;
     }
 
-    public void GetMatchInfo()
+    public async Task<RecentMatch> GetRecentMatch(int id)
     {
-      using (WebClient webclient = new WebClient())
+      string result = null;
+      RecentMatch game = null;
+
+      result = await CallFumbblApi(API_GET_MATCH_INFO+ id);
+
+      if (result == null)
       {
-        string html = webclient.DownloadString(API_GET_MATCH_INFO);
-        var memes = JsonSerializer.Deserialize<RecentMatch>(html);
-        Console.WriteLine(memes.team1.name);
+        return game;
       }
-    }
-
-    public void GetLiveGamesssss()
-    {
-      using (WebClient webclient = new WebClient())
+      else if (IsError(result))
       {
-        string html = webclient.DownloadString(API_GET_LIVE_GAMES);
-        var memes = JsonSerializer.Deserialize<List<RunningGame>>(html);
-
-        foreach (RunningGame game in memes)
-        {
-          Console.WriteLine($"{game.RunningGame_Id}: {game.teams[0].name} vs {game.teams[1].name} ");
-        }
+        return game;
+      }
+      else
+      {
+        game = JsonSerializer.Deserialize<RecentMatch>(result);
+        return game;
       }
     }
 
@@ -196,5 +194,28 @@ namespace BloodierBot.Services
       return recentMatches;
     }
 
+    public const string API_GET_SCHEDULED_MATCHES = "https://fumbbl.com/api/tournament/schedule/";
+    public async Task<List<ScheduledMatch>> GetScheduledMatches(int id)
+    {
+      string result = null;
+      List<ScheduledMatch> recentMatches = new List<ScheduledMatch>();
+
+      result = await CallFumbblApi(API_GET_SCHEDULED_MATCHES + id);
+
+      if (result == null)
+      {
+        return recentMatches;
+      }
+      else if (IsError(result))
+      {
+        return recentMatches;
+      }
+      else
+      {
+        recentMatches = JsonSerializer.Deserialize<List<ScheduledMatch>>(result);
+      }
+
+      return recentMatches;
+    }
   }
 }

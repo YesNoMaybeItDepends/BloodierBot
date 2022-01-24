@@ -265,10 +265,19 @@ namespace BloodierBot.Services
       await meme.SendMessageAsync(embed: eb.Build());
     }
 
-    public async Task ResolveGame(RunningGame game)
+    public async Task ResolveGame(RunningGame livegame)
     {
-      var meme = await FindRecentMatchFromRunningGame(game);
-      Console.WriteLine(meme.team1.score + "-" + meme.team2.score);
+      var channel = _client.GetChannel(309774261667627008) as SocketTextChannel;
+      var game = await FindRecentMatchFromRunningGame(livegame);
+      
+      if (game != null)
+      {
+        await channel.SendMessageAsync(embed: EmbedRecentMatch(game));
+      }
+      else
+      {
+        await channel.SendMessageAsync("@ItDepends WARNING ERROR OH GOD"+livegame.teams[0]+"/"+ livegame.teams[1]);
+      }
     }
 
     public async Task<RecentMatch> FindRecentMatchFromRunningGame(RunningGame game)
@@ -289,10 +298,79 @@ namespace BloodierBot.Services
       ((historyGame.team1.name == homeTeamName) || (historyGame.team1.name == awayTeamName))
       &&
       ((historyGame.team2.name == homeTeamName) || (historyGame.team2.name == awayTeamName)));
-
-
       }
       return recentGame;
+    }
+
+    public Embed EmbedRecentMatch(RecentMatch game)
+    {
+      var eb = new EmbedBuilder();
+      var team1 = new EmbedFieldBuilder();
+      var vs = new EmbedFieldBuilder();
+      var team2 = new EmbedFieldBuilder();
+      var coach1 = new EmbedFieldBuilder();
+      var misc = new EmbedFieldBuilder();
+      var coach2 = new EmbedFieldBuilder();
+      var footer = new EmbedFieldBuilder();
+
+      // Team 1
+      team1.WithIsInline(true);
+      team1.WithName($"{game.team1.name}");
+      team1.WithValue("\u200b");
+
+      // Vs
+      vs.WithIsInline(true);
+      vs.WithName($"{game.team1.score} - {game.team2.score}");
+      vs.WithValue("\u200b");
+
+      // Team 2
+      team2.WithIsInline(true);
+      team2.WithName($"{game.team2.name}");
+      team2.WithValue("\u200b");
+
+      // Coach 1
+      coach1.WithIsInline(true);
+      coach1.WithName($"{game.team1.coach.name}");
+      var coach1string = new StringBuilder();
+      coach1string.AppendLine("*Race*");
+      coach1string.AppendLine(game.team1.teamValue);
+      coach1.WithValue($"{coach1string}");
+
+      // Misc
+      misc.WithIsInline(true);
+      misc.WithName("\u200b");
+      misc.WithValue("\u200b");
+
+      // Coach 2
+      coach2.WithIsInline(true);
+      coach2.WithName($"{game.team2.coach.name}");
+      var coach2string = new StringBuilder();
+      coach2string.AppendLine("*Race*");
+      coach2string.AppendLine(game.team2.teamValue);
+      coach2.WithValue($"{coach2string}");
+
+      // Footer
+      footer.WithIsInline(false);
+      footer.WithName("\u200b");
+      footer.WithValue($"[Replay](https://fumbbl.com/ffblive.jnlp?replay={game.replayId})");
+
+      // Embed
+      eb.WithThumbnailUrl("https://i.imgur.com/QTzpQlD.png");
+      eb.WithColor(Color.DarkPurple);
+      eb.WithTitle("Match Result");
+      eb.WithUrl($"https://fumbbl.com/p/match?id={game.RecentMatch_Id}");
+      eb.WithDescription($"\n");
+      //eb.WithDescription($"[Replay](https://fumbbl.com/ffblive.jnlp?replay={game.replayId})");
+      eb.AddField(team1);
+      eb.AddField(vs);
+      eb.AddField(team2);
+      eb.AddField(coach1);
+      eb.AddField(misc);
+      eb.AddField(coach2);
+      eb.AddField(footer);
+      //eb.WithFooter($"[Replay](https://fumbbl.com/ffblive.jnlp?replay={game.replayId})");
+
+      return eb.Build();
     }
   }
 }

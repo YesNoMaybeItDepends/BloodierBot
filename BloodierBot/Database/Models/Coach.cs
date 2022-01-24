@@ -10,7 +10,7 @@ namespace BloodierBot.Database.Models
   public class Coach
   {
     [JsonPropertyName("id")]
-    public int Coach_Id;
-    public string name;
+    public int Coach_Id { get; set; }
+    public string name { get; set; }
   }
 }
