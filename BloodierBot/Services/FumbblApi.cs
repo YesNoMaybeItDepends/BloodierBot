@@ -198,24 +198,30 @@ namespace BloodierBot.Services
     public async Task<List<ScheduledMatch>> GetScheduledMatches(int id)
     {
       string result = null;
-      List<ScheduledMatch> recentMatches = new List<ScheduledMatch>();
+      List<ScheduledMatch> scheduledMatches = new List<ScheduledMatch>();
 
       result = await CallFumbblApi(API_GET_SCHEDULED_MATCHES + id);
 
       if (result == null)
       {
-        return recentMatches;
+        return scheduledMatches;
       }
       else if (IsError(result))
       {
-        return recentMatches;
+        return scheduledMatches;
       }
       else
       {
-        recentMatches = JsonSerializer.Deserialize<List<ScheduledMatch>>(result);
+        scheduledMatches = JsonSerializer.Deserialize<List<ScheduledMatch>>(result);
       }
 
-      return recentMatches;
+      foreach (ScheduledMatch match in scheduledMatches)
+      {
+        match.tournamentId = id;
+        match.calculateId();
+      }
+
+      return scheduledMatches;
     }
   }
 }
