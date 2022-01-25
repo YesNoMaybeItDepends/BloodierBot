@@ -148,6 +148,9 @@ INNER JOIN RunningGameTeams AS teams ON (teams.RunningGameId = games.Id)
 LEFT OUTER JOIN RunningGameTournaments AS tourneys ON (tourneys.Id = games.RunningGameTournamentId) 
 ORDER BY games.Id</value>
   </data>
+  <data name="InsertScheduledMatch" xml:space="preserve">
+    <value>INSERT or IGNORE INTO ScheduledMatches(Id, TournamentId, Position, TRound, Created, Modified, ResultId, ATeamId, BTeamId) values(@Id, @TournamentId, @Position, @TRound, @Created, @Modified, @ResultId, @ATeamId, @BTeamId)</value>
+  </data>
   <data name="String1" xml:space="preserve">
     <value>SELECT 
 games.Id AS RunningGame_Id,
@@ -167,5 +170,6 @@ FROM RunningGames AS games
 INNER JOIN RunningGameTeams AS teams ON (teams.RunningGameId = games.Id) 
 LEFT OUTER JOIN RunningGameTournaments AS tourneys ON (tourneys.Id = games.RunningGameTournamentId) 
 ORDER BY games.Id</value>
+    <comment>Check if anything is using this, otherwise delete it</comment>
   </data>
 </root>

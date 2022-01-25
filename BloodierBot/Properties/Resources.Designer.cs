@@ -108,6 +108,15 @@ namespace BloodierBot.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to INSERT or IGNORE INTO ScheduledMatches(Id, TournamentId, Position, TRound, Created, Modified, ResultId, ATeamId, BTeamId) values(@Id, @TournamentId, @Position, @TRound, @Created, @Modified, @ResultId, @ATeamId, @BTeamId).
+        /// </summary>
+        public static string InsertScheduledMatch {
+            get {
+                return ResourceManager.GetString("InsertScheduledMatch", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to SELECT 
         ///games.Id AS RunningGame_Id,
         ///games.Half AS half,

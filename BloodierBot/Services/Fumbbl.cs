@@ -99,20 +99,51 @@ namespace BloodierBot.Services
       }
     }
 
-    // TODO this method is redundant, theres already a getrunningames and an insertrunninggame method
+    // TODO test this
     /// <summary>
-    /// Gets all RunningGames + Tournament (if applicable) + Teams.
+    /// Inserts a ScheduledMatch + TODO also insert winner
+    /// <para />
+    /// Does NOT dispose Database Connection
     /// </summary>
+    /// <param name="match"></param>
     /// <param name="db"></param>
-    [Obsolete("this method is redundant, theres already a getrunningames and an insertrunninggame method")]
-    public async void GetRunningGames_DEPRECATED(IDbConnection db)
+    public void InsertScheduledMatch(ScheduledMatch match, IDbConnection db)
     {
-      var livegames = await _fumbbl.GetRunningGames();
-
-      foreach(var game in livegames)
+      DynamicParameters params1 = new DynamicParameters();
+      
+      // Add basic parameters
+      params1.Add("Id", match.Id);
+      params1.Add("TournamentId", match.tournamentId);
+      params1.Add("Position", match.position);
+      params1.Add("TRound", match.round);
+      params1.Add("Created", match.created);
+      
+      // Add modified parameter    
+      if (match.modified != null)
       {
-        InsertRunningGame(game, db);
+        params1.Add("Modified", match.modified);
       }
+      else
+      {
+        params1.Add("Modified", null);
+      }
+      
+      // Add Result parameter
+      if (match.result != null)
+      {
+        params1.Add("ResultId", match.result.id);
+      }
+      else
+      {
+        params1.Add("ResultId", null);
+      }
+      
+      // Add Team parameters
+      params1.Add("ATeamId", match.teams[0].id);
+      params1.Add("BTeamId", match.teams[1].id);
+
+      // Add result
+      db.Execute(Properties.Resources.InsertScheduledMatch, params1);
     }
 
     public async Task run()
