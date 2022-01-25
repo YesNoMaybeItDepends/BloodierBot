@@ -53,9 +53,11 @@ namespace Tests
       }
     }
 
+    // TODO why was this not a test method? why isnt it named Test?
+    [TestMethod]
     public void InsertRunningGame(RunningGame game, IDbConnection db)
     {
-      // Add new games
+      // Add new game
       string query1 = "INSERT or IGNORE INTO RunningGames (Id, Half, Turn, Division, RunningGameTournamentId) values (@Id, @Half, @Turn, @Division, @RunningGameTournamentId)";
       DynamicParameters params1 = new DynamicParameters();
       params1.Add("Id", game.RunningGame_Id);
@@ -71,7 +73,7 @@ namespace Tests
         params1.Add("RunningGameTournamentId", null);
       }
       db.Execute(query1, params1);
-      // Ad new tournaments
+      // Add new tournament
       if (game.tournament != null)
       {
         Console.WriteLine(game.tournament.RunningGameTournament_Id + "//" + game.tournament.group);
@@ -81,7 +83,7 @@ namespace Tests
         params2.Add("GroupId", game.tournament.group);
         db.Execute(query2, params2);
       }
-      // Ad new teams
+      // Add new teams
       foreach (var team in game.teams)
       {
         string query3 = "INSERT or IGNORE INTO RunningGameTeams (Id, RunningGameID, Side, Name, Coach, Race, Tv, Rating, Score, Logo, LogoLarge) values (@Id, @RunningGameID, @Side, @Name, @Coach, @Race, @Tv, @Rating, @Score, @Logo, @LogoLarge)";
@@ -99,6 +101,64 @@ namespace Tests
         params3.Add("LogoLarge", team.logolarge);
         db.Execute(query3, params3);
       }
+    }
+
+    [TestMethod]
+    public async Task TestInsertScheduledMatches()
+    {
+      Console.WriteLine("np");
+      var matches = await _fapi.GetScheduledMatches(56861);
+      int matchescount = matches.Count();
+      int dbcount = 0;
+
+      string query1 = "INSERT or IGNORE INTO ScheduledMatches(Id, TournamentId, Position, TRound, Created, Modified, ResultId, ATeamId, BTeamId) values(@Id, @TournamentId, @Position, @TRound, @Created, @Modified, @ResultId, @ATeamId, @BTeamId)";
+      
+      using (var db = new SQLiteConnection(_config["ConnectionString"]))
+      {
+        Console.WriteLine("hello");
+        foreach (var match in matches)
+        {
+          // Add scheduled match
+          DynamicParameters params1 = new DynamicParameters();
+          params1.Add("Id", match.Id);
+          params1.Add("TournamentId", match.tournamentId);
+          params1.Add("Position", match.position);
+          params1.Add("TRound", match.round);
+          params1.Add("Created", match.created);
+          if (match.modified != null)
+          {
+            params1.Add("Modified", match.modified);
+          }
+          else
+          {
+            params1.Add("Modified", null);
+          }
+          if (match.result != null)
+          {
+            params1.Add("ResultId", match.result.id);
+          }
+          else
+          {
+            params1.Add("ResultId", null);
+          }
+          params1.Add("ATeamId", match.teams[0].id);
+          params1.Add("BTeamId", match.teams[1].id);
+
+          // Add result
+
+          try
+          {
+          dbcount =+ db.Execute(query1, params1);
+
+          }
+          catch(Exception ex)
+          {
+            Console.WriteLine(ex.ToString());
+          }
+        }
+      }
+
+      Assert.AreEqual(matchescount, dbcount);
     }
 
     [TestMethod]
