@@ -108,11 +108,114 @@ namespace BloodierBot.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to INSERT or IGNORE INTO ScheduledMatches(Id, TournamentId, Position, TRound, Created, Modified, ResultId, ATeamId, BTeamId) values(@Id, @TournamentId, @Position, @TRound, @Created, @Modified, @ResultId, @ATeamId, @BTeamId).
+        ///   Looks up a localized string similar to INSERT or IGNORE INTO 
+        ///RunningGames 
+        ///(Id, Half, Turn, Division, TournamentId) 
+        ///values 
+        ///(@Id, @Half, @Turn, @Division, @TournamentId).
         /// </summary>
-        public static string InsertScheduledMatch {
+        public static string insertRunningGame {
             get {
-                return ResourceManager.GetString("InsertScheduledMatch", resourceCulture);
+                return ResourceManager.GetString("insertRunningGame", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to INSERT or IGNORE INTO 
+        ///RunningGameTeams 
+        ///(Id, RunningGameId, Side, Name, Coach, Race, Tv, Rating, Score, Logo, LogoLarge)
+        ///values 
+        ///(@Id, @RunningGameId, @Side, @Name, @Coach, @Race, @Tv, @Rating, @Score, @Logo, @LogoLarge).
+        /// </summary>
+        public static string insertRunningGameTeam {
+            get {
+                return ResourceManager.GetString("insertRunningGameTeam", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to INSERT OR IGNORE INTO ScheduledGames
+        ///(Id, TournamentId)
+        ///values
+        ///(@Id, @TournamentId).
+        /// </summary>
+        public static string insertScheduledMatch {
+            get {
+                return ResourceManager.GetString("insertScheduledMatch", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to INSERT OR IGNORE INTO ScheduledMatchTeams
+        ///(ScheduledMatchId, TeamId, AorB)
+        ///VALUES
+        ///(@ScheduledMatchId, @TeamId, @AorB) 
+        ///.
+        /// </summary>
+        public static string insertScheduledMatchTeams {
+            get {
+                return ResourceManager.GetString("insertScheduledMatchTeams", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to INSERT OR IGNORE INTO Teams
+        ///(TeamId, Name)
+        ///values
+        ///(@TeamId, @Name).
+        /// </summary>
+        public static string insertTeam {
+            get {
+                return ResourceManager.GetString("insertTeam", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to INSERT OR IGNORE INTO Tournaments
+        ///(Id, Name)
+        ///values
+        ///(@Id, @Name).
+        /// </summary>
+        public static string insertTournament {
+            get {
+                return ResourceManager.GetString("insertTournament", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to SELECT * FROM Tournaments.
+        /// </summary>
+        public static string selectAllTournaments {
+            get {
+                return ResourceManager.GetString("selectAllTournaments", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to SELECT 
+        ///games.Id AS RunningGame_Id,
+        ///games.Half AS half,
+        ///games.Turn AS turn,
+        ///games.Division as division,
+        ///games.TournamentId as Tournament_Id,
+        ///tourneys.Name as t_name,
+        ///teams.Id as RunningGameTeam_Id,
+        ///teams.Side as side,
+        ///teams.Name as name,
+        ///teams.Coach as coach,
+        ///teams.Race as race,
+        ///teams.Tv as tv,
+        ///teams.Rating as rating,
+        ///teams.Score as score,
+        ///teams.Logo as logo,
+        ///teams.LogoLarge as logolarge
+        ///FROM RunningGames AS games
+        ///INNER JOIN RunningGameTeams AS teams ON (teams.RunningGameId = games.Id) 
+        ///L [rest of string was truncated]&quot;;.
+        /// </summary>
+        public static string selectRunningGames {
+            get {
+                return ResourceManager.GetString("selectRunningGames", resourceCulture);
             }
         }
         

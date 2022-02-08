@@ -194,34 +194,30 @@ namespace BloodierBot.Services
       return recentMatches;
     }
 
-    public const string API_GET_SCHEDULED_MATCHES = "https://fumbbl.com/api/tournament/schedule/";
-    public async Task<List<ScheduledMatch>> GetScheduledMatches(int id)
+    // TODO handle errors better
+    public async Task<IGetWithId> GetThing<T>(int id) where T : IGetWithId, new()
     {
-      string result = null;
-      List<ScheduledMatch> scheduledMatches = new List<ScheduledMatch>();
+      //string url = "https://fumbbl.com/api/player/get/";
+      //string url = "";
 
-      result = await CallFumbblApi(API_GET_SCHEDULED_MATCHES + id);
+      string result = null;
+      T thing = new T();
+
+      result = await CallFumbblApi(thing.ApiGetByIdLink + id);
 
       if (result == null)
       {
-        return scheduledMatches;
+        return null;
       }
       else if (IsError(result))
       {
-        return scheduledMatches;
+        return null;
       }
       else
       {
-        scheduledMatches = JsonSerializer.Deserialize<List<ScheduledMatch>>(result);
+        thing = JsonSerializer.Deserialize<T>(result);
+        return thing;
       }
-
-      foreach (ScheduledMatch match in scheduledMatches)
-      {
-        match.tournamentId = id;
-        match.calculateId();
-      }
-
-      return scheduledMatches;
     }
   }
 }

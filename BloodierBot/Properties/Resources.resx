@@ -148,8 +148,30 @@ INNER JOIN RunningGameTeams AS teams ON (teams.RunningGameId = games.Id)
 LEFT OUTER JOIN RunningGameTournaments AS tourneys ON (tourneys.Id = games.RunningGameTournamentId) 
 ORDER BY games.Id</value>
   </data>
-  <data name="InsertScheduledMatch" xml:space="preserve">
-    <value>INSERT or IGNORE INTO ScheduledMatches(Id, TournamentId, Position, TRound, Created, Modified, ResultId, ATeamId, BTeamId) values(@Id, @TournamentId, @Position, @TRound, @Created, @Modified, @ResultId, @ATeamId, @BTeamId)</value>
+  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
+  <data name="insertRunningGame" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Database\Queries\insertRunningGame.sql;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="insertRunningGameTeam" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Database\Queries\insertRunningGameTeam.sql;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="insertScheduledMatch" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Database\Queries\insertScheduledMatch.sql;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="insertScheduledMatchTeams" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Database\Queries\insertScheduledMatchTeams.sql;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="insertTeam" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Database\Queries\insertTeam.sql;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="insertTournament" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Database\Queries\insertTournament.sql;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="selectAllTournaments" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Database\Queries\selectAllTournaments.sql;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="selectRunningGames" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Database\Queries\selectRunningGames.sql;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="String1" xml:space="preserve">
     <value>SELECT 

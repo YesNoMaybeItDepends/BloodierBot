@@ -120,6 +120,12 @@
   <data name="a" xml:space="preserve">
     <value />
   </data>
+  <data name="InsertScheduledMatchTeam" xml:space="preserve">
+    <value>INSERT or IGNORE INTO ScheduledMatchTeams
+(ScheduledMatchId, TeamId, AorB) 
+values 
+(@ScheduledMatchId, @TeamId, @AorB);</value>
+  </data>
   <data name="TestDeleteRunningGame" xml:space="preserve">
     <value>DELETE FROM RunningGames AS games
 WHERE games.Id = @RunningGameId;</value>

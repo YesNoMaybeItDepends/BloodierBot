@@ -70,6 +70,18 @@ namespace Tests.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to INSERT or IGNORE INTO ScheduledMatchTeams
+        ///(ScheduledMatchId, TeamId, AorB) 
+        ///values 
+        ///(@ScheduledMatchId, @TeamId, @AorB);.
+        /// </summary>
+        internal static string InsertScheduledMatchTeam {
+            get {
+                return ResourceManager.GetString("InsertScheduledMatchTeam", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to DELETE FROM RunningGames AS games
         ///WHERE games.Id = @RunningGameId;.
         /// </summary>

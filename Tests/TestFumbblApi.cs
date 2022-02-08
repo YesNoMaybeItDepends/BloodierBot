@@ -73,7 +73,7 @@ namespace Tests
     }
 
     [TestMethod]
-    public async Task TestFumbblApiGetRunningGames()
+    public async Task TestGetRunningGames()
     {
       var fumbblapi = new FumbblApi();
 
@@ -94,50 +94,106 @@ namespace Tests
 
         if (meme.tournament != null)
         {
-          Assert.IsNotNull(meme.tournament.RunningGameTournament_Id);
+          Assert.IsNotNull(meme.tournament.Tournament_Id);
           Assert.IsNotNull(meme.tournament.group);
         }
 
-        Console.WriteLine($"{i} / {meme.RunningGame_Id}: TV {meme.teams[0].tv} [{meme.teams[0].name}] vs [{meme.teams[1].name}] TV {meme.teams[1].tv}\\ {meme.tournament?.RunningGameTournament_Id}");
+        Console.WriteLine($"{i} / {meme.RunningGame_Id}: TV {meme.teams[0].tv} [{meme.teams[0].name}] vs [{meme.teams[1].name}] TV {meme.teams[1].tv}\\ {meme.tournament?.Tournament_Id}");
         i++;
       }
     }
 
+    // TODO finish this, need to add team meme first
     [TestMethod]
-    public async Task np()
+    public async Task TestInsertScheduledMatchTeam()
     {
-      int tournamentid = 55956;
-
-      var fumbblapi = new FumbblApi();
-
-      List<ScheduledMatch> scheduledMatches = new List<ScheduledMatch>();
-
-      scheduledMatches = await fumbblapi.GetScheduledMatches(tournamentid);
-
-      if (scheduledMatches.Count != 0)
+      Console.WriteLine("np");
+      using (var db = new SQLiteConnection(_config["ConnectionString"]))
       {
-        Console.WriteLine("Scheduled matches: " + scheduledMatches.Count);
+        int tournamentid = 55956;
+        List<ScheduledMatch> scheduledMatches = new List<ScheduledMatch>();
+        scheduledMatches = await ScheduledMatch.GetScheduledMatches(tournamentid);
 
-        foreach (var scheduledMatch in scheduledMatches)
+        // For testing purposes, use first match
+        ScheduledMatch scheduledMatch;
+        if (scheduledMatches.Count > 0) scheduledMatch = scheduledMatches[0]; else return;
+
+        foreach (ScheduledMatch.Team team in scheduledMatch.teams)
         {
-          Console.WriteLine("----");
-          Console.WriteLine("Position: " + scheduledMatch.position);
-          Console.WriteLine("Round: " + scheduledMatch.round);
-          Console.WriteLine("Created: " + scheduledMatch.created);
-          if (scheduledMatch.modified != null) { Console.WriteLine("Modified: " + scheduledMatch.modified); }
-          Console.WriteLine("Team 1: " + scheduledMatch.teams.ElementAt(0).name);
-          Console.WriteLine("Team 2: " + scheduledMatch.teams.ElementAt(1).name);
+          // Determine if team is A or B
+          char AorB;
+          if (scheduledMatch.teams.IndexOf(team) == 0) AorB = 'A';
+          else AorB = 'B';
 
-          if (scheduledMatch.result != null)
+          DynamicParameters parameters = new DynamicParameters();
+          parameters.Add("ScheduledMatchId", scheduledMatch.Id);
+          parameters.Add("TeamId", team.id);
+          parameters.Add("AorB");
+
+          try
           {
-            Console.WriteLine("Winner: " + scheduledMatch.result.winner);
-            Console.WriteLine("Score: " + scheduledMatch.result.teams[0].score + "-" + scheduledMatch.result.teams[1].score);
+            db.Execute(Properties.Resources.InsertScheduledMatchTeam, parameters);
           }
+          catch (Exception ex) { Console.WriteLine(ex.Message); }
         }
       }
-      else
+    }
+
+    [TestMethod]
+    public async Task TestGetPlayer()
+    {
+      Player player = await _fapi.GetThing<Player>(10817232) as Player;
+      Helpers.PrintObject(player);
+    }
+
+    [TestMethod]
+    public async Task TestGetTeam()
+    {
+      Team team = await _fapi.GetThing<Team>(1061542) as Team;
+      Helpers.PrintObject(team);
+    }
+
+    [TestMethod]
+    public async Task TestGetTournament()
+    {
+      Tournament tournament = await _fapi.GetThing<Tournament>(56971) as Tournament;
+      Helpers.PrintObject(tournament);
+    }
+
+    [TestMethod]
+    public async Task TestGetScheduledMatches()
+    {
+      List<ScheduledMatch> scheduledMatches = await ScheduledMatch.GetScheduledMatches(56971);
+      Helpers.PrintObject(scheduledMatches);
+    }
+
+    [TestMethod]
+    public async Task TestInsertTournament()
+    {
+      using (var db = new SQLiteConnection(_config["ConnectionString"]))
       {
-        Assert.Fail();
+        Tournament tournament = await _fapi.GetThing<Tournament>(56971) as Tournament;
+        tournament.DbInsertTournament(db);
+      }
+    }
+
+    [TestMethod]
+    public async Task TestSelectAllTournaments()
+    {
+      using (var db = new SQLiteConnection(_config["ConnectionString"]))
+      {
+        List<Tournament> ts = await Tournament.DbSelectAllTournaments(db);
+        Helpers.PrintObject(ts);
+      }
+    }
+
+    [TestMethod]
+    public async Task TestSelectRunningGames()
+    {
+      using (var db = new SQLiteConnection(_config["ConnectionString"]))
+      {
+        var meme = RunningGame.GetRunningGamesFromDatabase(db);
+        Helpers.PrintObject(meme);
       }
     }
   }

@@ -15,11 +15,25 @@ using System.Data.SQLite;
 using Dapper;
 using System.Net;
 using BloodierBot.Database.Models;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace BloodierBot.Modules
 {
   public class ExampleCommands : ModuleBase
   {
+    private readonly IConfiguration _config;
+    private readonly ILogger _logger;
+    private readonly FumbblApi _fapi;
+
+    // Constructor
+    public ExampleCommands(IServiceProvider services)
+    {
+      _config = services.GetRequiredService<IConfiguration>();
+      _logger = services.GetRequiredService<ILogger<CommandHandler>>();
+      _fapi = services.GetRequiredService<FumbblApi>();
+      //_db = services.GetRequiredService<BloodierBotContext>();
+    }
 
     // Hello
     [Command("Hello")]
@@ -182,6 +196,44 @@ namespace BloodierBot.Modules
       var e = eb.Build();
 
       await ReplyAsync("@Lazyfan", embed: e);
+    }
+
+    [Command("add tournament")]
+    [RequireOwner]
+    public async Task AddTournament([Remainder] string args = null)
+    {
+      bool result = false;
+      StringBuilder sb = new StringBuilder();
+
+      if (int.TryParse(args, out var id))
+      {
+        FumbblApi fapi = new FumbblApi();
+        Tournament? tournament = await fapi.GetThing<Tournament>(id) as Tournament;
+        if (tournament != null)
+        {
+          using (IDbConnection db = new SQLiteConnection(_config["ConnectionString"]))
+          {
+            if (await tournament.DbInsertTournament(db))
+            {
+              result = true;
+              sb.AppendLine($"{tournament?.t_name} added");
+            }
+          }
+        }
+      }
+
+      if (result == false)
+      {
+        sb.AppendLine("That didn't work");
+      }
+
+      await ReplyAsync(sb.ToString());
+    }
+
+    [Command("games")]
+    public async Task Games()
+    {
+
     }
   }
 }
