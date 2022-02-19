@@ -1,4 +1,4 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using BloodierBot.Database.Models;
 using BloodierBot.Services;
@@ -11,15 +11,20 @@ using System.Linq;
 using Slapper;
 using System.Threading.Tasks;
 using Discord;
+using System.ComponentModel;
+using System.Text.Json;
 
 namespace Tests
 {
   [TestClass]
-  public class TestMiscellanious
+  public class Tournaments_Tests
   {
     private IConfiguration _config;
     private IDiscordClient _client;
     private FumbblApi _fapi;
+    private SQLiteConnection _db;
+
+    private int TOURNAMENT_TG = 56971;
 
     [TestInitialize]
     public void setup()
@@ -31,38 +36,31 @@ namespace Tests
       _config = _configBuilder.Build();
 
       _fapi = new FumbblApi();
+
+      _db = new SQLiteConnection(_config["ConnectionString"]);
+      Console.WriteLine("Setup Finished");
+      Console.WriteLine("--------");
     }
 
     [TestMethod]
-    public void testconfig()
+    public async Task ApiGetById_Works()
     {
-      foreach (KeyValuePair<string,string> keyValuePair in _config.AsEnumerable())
-      {
-        Console.WriteLine($"{keyValuePair.Key} : {keyValuePair.Value}");
-      }
+      Helpers.PrintObject(await Tournament.ApiGetById(TOURNAMENT_TG));
     }
 
     [TestMethod]
-    public void How_Do_Errors_Work()
+    public async Task DbInsertTournament_Works()
     {
-      try
-      {
-        int i = 0;
-        throw new TimeoutException("aaaaa");
-        Console.WriteLine("continuing");
-      }
-      catch (Exception ex)
-      {
-        Console.WriteLine(ex.ToString());
-      }
-
-      Console.WriteLine("np");
+      var t = await Tournament.ApiGetById(TOURNAMENT_TG);
+      Console.WriteLine(t.DbInsertTournament(_db));
     }
 
-    [TestCleanup]
-    public void cleanup()
+    [TestMethod]
+    public async Task DbSelectAllTournaments_Works()
     {
-      Console.WriteLine("Cleanup");
+      Helpers.PrintObject(await Tournament.DbSelectAllTournaments(_db));
     }
+
+
   }
 }

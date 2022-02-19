@@ -17,7 +17,7 @@ using System.Text.Json;
 namespace Tests
 {
   [TestClass]
-  public class TestFumbblApi
+  public class FumbblApi_Tests
   {
     private IConfiguration _config;
     private IDiscordClient _client;
@@ -194,6 +194,40 @@ namespace Tests
       {
         var meme = RunningGame.GetRunningGamesFromDatabase(db);
         Helpers.PrintObject(meme);
+      }
+    }
+
+    [TestMethod]
+    public async Task CallFumbblApi_Fumbbl404_isNull()
+    {
+      Console.WriteLine("Running Test");
+        string? result = await  _fapi.CallFumbblApi("https://fumbvbl.com/jawdaiwefjoraiwfjio");
+      Console.WriteLine("Assert result is null");
+      Assert.IsNull(result);
+    }
+
+    [TestMethod]
+    public async Task CallFumbblApi_RequestTimeout_isNull()
+    {
+      string? result = await _fapi.CallFumbblApi("https://httpstat.us/200?sleep=120000");
+      Console.WriteLine("Assert result is null");
+      Assert.IsNull(result);
+    }
+
+    [TestMethod]
+    public async Task CallFumbblApi_ApiError_isError()
+    {
+      //string? result = await _fapi.CallFumbblApi("https://fumbbl.com/api/player/get/faorefjre");
+      string? result = await _fapi.CallFumbblApi("https://fumbbl.com/api/ligma/get/faorefjre");
+      if (result != null)
+      {
+        Console.WriteLine("Assert result is error");
+        Assert.IsTrue(_fapi.IsError(result));
+      }
+      else
+      {
+        Console.WriteLine("result was null");
+        Assert.Fail();
       }
     }
   }

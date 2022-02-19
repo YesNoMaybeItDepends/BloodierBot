@@ -156,5 +156,13 @@ namespace BloodierBot.Database.Models
         await db.ExecuteAsync(Properties.Resources.insertScheduledMatchTeams, parameters);
       }
     }
+
+    public async void dbDelete(IDbConnection db)
+    {
+      DynamicParameters p = new DynamicParameters();
+      p.Add("Id", Id);
+
+      await db.ExecuteAsync(Properties.Resources.deleteScheduledMatch, p);
+    }
   }
 }

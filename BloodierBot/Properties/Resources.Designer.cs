@@ -81,6 +81,16 @@ namespace BloodierBot.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to DELETE FROM ScheduledGames
+        ///WHERE Id = @Id.
+        /// </summary>
+        public static string deleteScheduledMatch {
+            get {
+                return ResourceManager.GetString("deleteScheduledMatch", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to SELECT 
         ///games.Id AS RunningGame_Id,
         ///games.Half AS half,
@@ -183,6 +193,18 @@ namespace BloodierBot.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to INSERT INTO Users
+        ///(Id, Name, Money)
+        ///VALUES
+        ///(@Id, @Name, 100).
+        /// </summary>
+        public static string insertUser {
+            get {
+                return ResourceManager.GetString("insertUser", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to SELECT * FROM Tournaments.
         /// </summary>
         public static string selectAllTournaments {
@@ -241,6 +263,17 @@ namespace BloodierBot.Properties {
         public static string String1 {
             get {
                 return ResourceManager.GetString("String1", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to UPDATE Users
+        ///Set Money = Money + @Money
+        ///WHERE Id = @Id.
+        /// </summary>
+        public static string updateUserMoney {
+            get {
+                return ResourceManager.GetString("updateUserMoney", resourceCulture);
             }
         }
     }

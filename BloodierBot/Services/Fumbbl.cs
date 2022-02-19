@@ -97,19 +97,15 @@ namespace BloodierBot.Services
       while (true)
       {
         StringBuilder sb = new StringBuilder();
-        
+        string newRunCycleString = "["+DateTime.UtcNow.AddHours(1).ToLongTimeString() + " DBG] : New run() cycle";
+        sb.AppendLine(newRunCycleString);
+        Console.WriteLine(newRunCycleString);
+        // Get CurrentGames from the DB
+        // Compare
+        // Find games to announce
+        // Find games to resolve
         try
         {
-          // Get CurrentGames from the DB
-          // Compare
-          // Find games to announce
-          // Find games to resolve
-
-          EmbedBuilder eb = new EmbedBuilder();
-          eb.WithTitle("lol");
-          eb.WithDescription("lmao");
-          eb.WithImageUrl("https://fumbbl.com/i/582020");
-
           using (IDbConnection db = new SQLiteConnection(_config["ConnectionString"]))
           {
             var livegames = await _fumbbl.GetRunningGames();
@@ -117,49 +113,43 @@ namespace BloodierBot.Services
 
             var gamesToAnnounce = livegames.Except(dbgames).ToList();
             var gamesToResolve = dbgames.Except(livegames).ToList();
-            
-            // DEBUG
-            Console.WriteLine();
-            Console.WriteLine("Games on fumbbl: " + livegames.Count());
-            Console.WriteLine("Games on database: " + dbgames.Count());
-            Console.WriteLine("Games to announce: " + gamesToAnnounce.Count());
-            Console.WriteLine("Games to resolve: " + gamesToResolve.Count());
-            Console.WriteLine();
 
-            sb.AppendLine("**FINISHED GAMES**");
+            // Resolving games
             foreach (var game in gamesToResolve)
             {
               sb.AppendLine($"{game.teams[0]?.name} vs {game.teams[1]?.name} / {game.tournament?.group}");
-              await ResolveGame(game);
-              game.DeleteRunningGame(db);
+              // If we fail to resolve the game, try again in the next run
+              if (await ResolveGame(game) == true)
+              {
+                game.DeleteRunningGame(db);
+              }
             }
-
-            sb.AppendLine("**NEW GAMES**");
-            List<Tournament> tournaments = await Tournament.DbSelectAllTournaments(db);
-            var tournamentids = tournaments.Select(x => x.Tournament_Id).ToList();
+            
+            // New games
+            List<Tournament> trackedTournaments = await Tournament.DbSelectAllTournaments(db);
+            var trackedTournamentIds = trackedTournaments.Select(x => x.Tournament_Id).ToList();
+            
             foreach (var game in gamesToAnnounce)
             {
-              //if (game.tournament != null && tournamentids.Contains(game.tournament.Tournament_Id))
+              if (game.tournament != null && trackedTournamentIds.Contains(game.tournament.Tournament_Id))
               {
                 sb.AppendLine($"{game.teams[0].name} vs {game.teams[1].name} / {game.tournament?.group}");
-                game.DbInsertRunningGame(db);
+                await game.DbInsertRunningGame(db);
                 await AnnounceGame(game);
               }
             }
           }
+          ulong debugChannelId = ulong.Parse(_config["Channel_Debug"]);
+          var debugChannel = _client.GetChannel(debugChannelId) as SocketTextChannel;
+          await debugChannel.SendMessageAsync(sb.ToString());
         }
         catch (Exception ex)
         {
           Console.WriteLine(ex.ToString());
         }
 
-        var meme = _client.GetChannel(309774261667627008) as SocketTextChannel;
-
-        await meme.SendMessageAsync(sb.ToString());
-
-        Console.WriteLine("finna sleep");
+        Console.WriteLine("["+DateTime.UtcNow.AddHours(1).ToLongTimeString()+" DBG] : Sleeping...");
         Thread.Sleep(60000);
-        Console.WriteLine("slept");
       }
     }
 
@@ -168,7 +158,8 @@ namespace BloodierBot.Services
       var eb = new EmbedBuilder();
 
       eb.WithThumbnailUrl("https://i.imgur.com/QTzpQlD.png");
-      eb.WithColor(Discord.Color.DarkPurple);
+      //eb.WithColor(Discord.Color.DarkPurple);
+      eb.WithColor(Color.Blue);
       eb.WithTitle("Spectate Game");
       eb.WithUrl($"https://fumbbl.com/ffblive.jnlp?spectate={game.RunningGame_Id}");
 
@@ -189,37 +180,58 @@ namespace BloodierBot.Services
       eb.AddField(team1);
       eb.AddField(team2);
 
-      var meme = _client.GetChannel(309774261667627008) as SocketTextChannel;
+      ulong channelId = ulong.Parse(_config["Channel_Announce"]);
+      var channel = _client.GetChannel(channelId) as SocketTextChannel;
 
-      await meme.SendMessageAsync(embed: eb.Build());
+
+      await channel.SendMessageAsync(MentionUtils.MentionRole(326485871639658496),embed: eb.Build());
+
     }
 
-    public async Task ResolveGame(RunningGame livegame)
+    public async Task<bool> ResolveGame(RunningGame livegame)
     {
-      var channel = _client.GetChannel(309774261667627008) as SocketTextChannel;
+      ulong resolvingId = ulong.Parse(_config["Channel_Resolve"]);
+      ulong errorsId = ulong.Parse(_config["Channel_Error"]);
+      var channelResolving = _client.GetChannel(resolvingId) as SocketTextChannel;
+      var channelErrors = _client.GetChannel(errorsId) as SocketTextChannel;
       var game = await FindRecentMatchFromRunningGame(livegame);
       
       if (game != null)
       {
-        await channel.SendMessageAsync(embed: EmbedRecentMatch(game));
+        await channelResolving.SendMessageAsync(embed: EmbedRecentMatch(game));
+        return true;
       }
       else
       {
-        await channel.SendMessageAsync("@ItDepends WARNING ERROR OH GOD"+livegame.teams[0]+"/"+ livegame.teams[1]);
+        // retry
+        await channelErrors.SendMessageAsync("@ItDepends WARNING ERROR OH GOD"+livegame.teams[0]+"/"+ livegame.teams[1]);
+        return false;
       }
     }
 
     public async Task<RecentMatch> FindRecentMatchFromRunningGame(RunningGame game)
     {
+      Console.WriteLine("Finding recent match from running games");
+
       RecentMatch recentGame = null;
-      
+
       var matchHistory = await _fumbbl.GetTeamMatches(game.teams[0].RunningGameTeam_Id);
+      if (matchHistory != null)
+      {
+        Console.WriteLine("Obtained home team match history");
+      }
+      else
+      {
+        Console.WriteLine("Failed to obtain home tema match history");
+      }
 
       var homeTeamName = game.teams[0].name;
       var homeTeamTV = game.teams[0].tv;
+      Console.WriteLine("Home team: "+homeTeamName);
 
       var awayTeamName = game.teams[1].name;
       var awayTeamTV = game.teams[1].tv;
+      Console.WriteLine("Away team: "+awayTeamName);
 
       if (matchHistory != null)
       {
@@ -228,7 +240,23 @@ namespace BloodierBot.Services
       &&
       ((historyGame.team2.name == homeTeamName) || (historyGame.team2.name == awayTeamName)));
       }
-      return recentGame;
+      if (recentGame != null)
+      {
+        return recentGame;
+      }
+      else
+      {
+        Console.WriteLine("Could not find recentgame in home team's match history");
+        ulong errorsId = ulong.Parse(_config["Channel_Error"]);
+        var channelErrors = _client.GetChannel(errorsId) as SocketTextChannel;
+        StringBuilder sb = new StringBuilder();
+        sb.AppendLine("Could not find recentgame in home team's match history");
+        sb.AppendLine($"{homeTeamName} vs {awayTeamName}");
+        sb.AppendLine("Half: " + game.half);
+        sb.AppendLine("Turn: " + game.turn);
+        await channelErrors.SendMessageAsync(sb.ToString());
+        return recentGame;
+      }
     }
 
     public Embed EmbedRecentMatch(RecentMatch game)
@@ -285,7 +313,7 @@ namespace BloodierBot.Services
 
       // Embed
       eb.WithThumbnailUrl("https://i.imgur.com/QTzpQlD.png");
-      eb.WithColor(Color.DarkPurple);
+      eb.WithColor(Color.Green);
       eb.WithTitle("Match Result");
       eb.WithUrl($"https://fumbbl.com/p/match?id={game.RecentMatch_Id}");
       eb.WithDescription($"\n");

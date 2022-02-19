@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using DapperExtensions;
 
 namespace BloodierBot.Database.Models
 {
@@ -18,7 +19,11 @@ namespace BloodierBot.Database.Models
 
     [JsonConverter(typeof(TournamentIdConverter))]
     [JsonPropertyName("id")]
+    [Column("Id")]
     public int Tournament_Id { get; set; }
+    // Why is it t_name?
+    [JsonPropertyName("name")]
+    [Column("Name")]
     public string t_name { get; set; } = "poop";
     public string type { get; set; }
     public string status { get; set; }
@@ -27,6 +32,12 @@ namespace BloodierBot.Database.Models
     public string season { get; set; }
     public IdNamePair winner { get; set; }
     public int? group = null;
+
+    private class dbmeme
+    {
+      public int Id { get; set; }
+      public string name { get; set; }
+    }
 
     public static async Task<Tournament> ApiGetById(int id)
     {
@@ -48,9 +59,17 @@ namespace BloodierBot.Database.Models
 
     public static async Task<List<Tournament>> DbSelectAllTournaments(IDbConnection db)
     {
-      List<Tournament>? list = null;
-      list = await db.QueryAsync<Tournament>(Properties.Resources.selectAllTournaments) as List<Tournament>;
+      List<Tournament>? list = new List<Tournament>();
+      //list = await db.QueryAsync<Tournament>(Properties.Resources.selectAllTournaments) as List<Tournament>;
+      var stuff = await db.QueryAsync<dbmeme>(Properties.Resources.selectAllTournaments);
+      stuff.ToList();
+      foreach (dbmeme lol in stuff)
+      {
+        list.Add(new Tournament { t_name = lol.name, Tournament_Id = lol.Id }) ;
+      }
+      //list = stuff.ToList();
       return list;
+      
     }
 
     public bool Equals(RunningGameTournament? t)
@@ -75,6 +94,7 @@ namespace BloodierBot.Database.Models
           case JsonTokenType.Number:
             return reader.GetInt32();
           default:
+            Console.WriteLine("BOB SAGGET");
             return -1;
         }
       return -1;

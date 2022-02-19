@@ -66,5 +66,29 @@ namespace Tests
         _db.Close();
       }
     }
+
+    [TestMethod]
+    public async Task dbDeleteScheduledMatch()
+    {
+      List<ScheduledMatch> matches = await ScheduledMatch.GetScheduledMatches(TOURNAMENT_TG);
+
+      _db.Open();
+
+      foreach (var match in matches)
+      {
+        match.dbInsert(_db);
+      }
+
+      foreach (var match in matches)
+      {
+        try
+        {
+          match.dbDelete(_db);
+        }
+        catch (Exception ex) { Console.WriteLine(ex); };
+      }
+
+      _db.Close();
+    }
   }
 }

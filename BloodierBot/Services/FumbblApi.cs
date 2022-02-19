@@ -15,9 +15,9 @@ namespace BloodierBot.Services
 
     public const string API_GET_MATCH_INFO = "https://fumbbl.com/api/match/get/";
 
-    public async Task<String> CallFumbblApi(string query)
+    public async Task<string?> CallFumbblApi(string query)
     {
-      string result = null;
+      string? result = null;
       Uri uri = new Uri(query);
 
       try
@@ -25,22 +25,26 @@ namespace BloodierBot.Services
         using (var webclient = new WebClient())
         {
           // Handle Download Completed Event
-          webclient.DownloadStringCompleted += async (sender, e) =>
+          webclient.DownloadStringCompleted += (sender, e) =>
           {
-            if (e.Result != null)
+            try
             {
-              result = e.Result;
+              if (e != null && e.Result != null)
+              {
+                result = e.Result;
+              }
             }
+            catch (Exception ex) { Console.WriteLine(ex.ToString()); }
           };
 
           // Download the resource
           result = await webclient.DownloadStringTaskAsync(uri);
         }
       }
-      catch (WebException e)
+      catch (WebException ex)
       {
         // TODO log
-        Console.WriteLine("ERROR -> " + e.Message);
+        Console.WriteLine("ERROR -> " + ex.ToString());
       }
 
       return result;
@@ -48,7 +52,7 @@ namespace BloodierBot.Services
 
     public async Task<RecentMatch> GetRecentMatch(int id)
     {
-      string result = null;
+      string? result = null;
       RecentMatch game = null;
 
       result = await CallFumbblApi(API_GET_MATCH_INFO+ id);
@@ -85,55 +89,8 @@ namespace BloodierBot.Services
 
     #region Coach Section
 
-    public const string API_GET_COACH_INFORMATION = "https://fumbbl.com/api/coach/g3t/";
+    public const string API_GET_COACH_INFORMATION = "https://fumbbl.com/api/coach/get/";
 
-    /// <summary>
-    /// Find Coach by ID
-    /// </summary>
-    /// <param name="id"></param>
-    /// <returns>Coach object, or null Coach object if coach was not found</returns>
-    public async Task<Coach> GetCoach(int id)
-    {
-      string result = null;
-      Coach coach = null;
-
-      try
-      {
-        using (WebClient webclient = new WebClient())
-        {
-          // Handle Download Completed Event
-          webclient.DownloadStringCompleted += async (sender, e) =>
-          {
-            if (e.Result != null)
-            {
-              result = e.Result;
-            }
-          };
-
-          // Download the resource
-          result = await webclient.DownloadStringTaskAsync(new Uri(API_GET_COACH_INFORMATION + id.ToString()));
-        }
-      }
-      // 
-      catch (WebException e)
-      {
-        Console.WriteLine("ERROR -> "+e.Message);
-      }
-
-      if (result != null)
-      {
-        if (!result.StartsWith("\"Error:"))
-        {
-          Console.WriteLine(result);
-          coach = JsonSerializer.Deserialize<Coach>(result);
-        }
-        else
-        {
-          Console.WriteLine(result);
-        }
-      }
-      return coach;
-    }
     #endregion
 
     #region Group Section
@@ -145,7 +102,7 @@ namespace BloodierBot.Services
     
     public async Task<List<RunningGame>> GetRunningGames()
     {
-      string result = null;
+      string? result = null;
       List<RunningGame> runningGames = new List<RunningGame>();
 
       result = await CallFumbblApi(API_GET_LIVE_GAMES);
@@ -173,7 +130,7 @@ namespace BloodierBot.Services
     public const string API_GET_TEAM_MATCHES = "https://fumbbl.com/api/team/matches/";
     public async Task<List<RecentMatch>> GetTeamMatches(int id)
     {
-      string result = null;
+      string? result = null;
       List<RecentMatch> recentMatches = new List<RecentMatch>();
       
       result = await CallFumbblApi(API_GET_TEAM_MATCHES + id);
@@ -200,7 +157,7 @@ namespace BloodierBot.Services
       //string url = "https://fumbbl.com/api/player/get/";
       //string url = "";
 
-      string result = null;
+      string? result = null;
       T thing = new T();
 
       result = await CallFumbblApi(thing.ApiGetByIdLink + id);
