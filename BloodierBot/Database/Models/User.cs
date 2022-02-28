@@ -70,5 +70,29 @@ namespace BloodierBot.Database.Models
       }
       return result;
     }
+
+    public static async Task<int?> getMoney(ulong userId, IDbConnection db)
+    {
+      DynamicParameters p = new DynamicParameters();
+      p.Add("Id", userId);
+      int? money = null;
+      try
+      {
+        money = await db.QuerySingleAsync<int?>(Properties.Resources.selectMoneyFromUser,p);
+      }
+      catch(Exception ex)
+      {
+        Console.WriteLine(ex.ToString());
+      }
+      return money;
+    }
+
+    public async Task<int?> getMoney(IDbConnection db)
+    {
+      DynamicParameters p = new DynamicParameters();
+      p.Add("Id", Id);
+      int? money = await db.QuerySingleOrDefault(Properties.Resources.selectMoneyFromUser, p);
+      return money;
+    }
   }
 }

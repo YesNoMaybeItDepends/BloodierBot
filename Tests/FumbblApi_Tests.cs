@@ -112,7 +112,7 @@ namespace Tests
       {
         int tournamentid = 55956;
         List<ScheduledMatch> scheduledMatches = new List<ScheduledMatch>();
-        scheduledMatches = await ScheduledMatch.GetScheduledMatches(tournamentid);
+        scheduledMatches = await ScheduledMatch.GetScheduledMatchesFromTournamentId(tournamentid);
 
         // For testing purposes, use first match
         ScheduledMatch scheduledMatch;
@@ -163,7 +163,7 @@ namespace Tests
     [TestMethod]
     public async Task TestGetScheduledMatches()
     {
-      List<ScheduledMatch> scheduledMatches = await ScheduledMatch.GetScheduledMatches(56971);
+      List<ScheduledMatch> scheduledMatches = await ScheduledMatch.GetScheduledMatchesFromTournamentId(56971);
       Helpers.PrintObject(scheduledMatches);
     }
 

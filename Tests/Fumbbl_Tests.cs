@@ -17,15 +17,16 @@ using System.Text.Json;
 namespace Tests
 {
   [TestClass]
-  public class ScheduledGame_Tests
+  public class Fumbbl_Tests
   {
     private IConfiguration _config;
     private IDiscordClient _client;
+    private readonly IServiceProvider _services;
     private FumbblApi _fapi;
     private SQLiteConnection _db;
 
     private int TOURNAMENT_TG = 56971;
-    
+
     [TestInitialize]
     public void setup()
     {
@@ -43,51 +44,11 @@ namespace Tests
     }
 
     [TestMethod]
-    public async Task GetScheduledMatches_Works()
+    public async Task ResolveBets()
     {
-      List<ScheduledMatch> matches = await ScheduledMatch.GetScheduledMatchesFromTournamentId(TOURNAMENT_TG);
-
-      foreach (var match in matches)
-      {
-        Assert.IsNotNull(match);
-        Helpers.PrintObject(match);
-      }
-    }
-
-    [TestMethod]
-    public async Task dbInsert_Works()
-    {
-      List<ScheduledMatch> matches = await ScheduledMatch.GetScheduledMatchesFromTournamentId(TOURNAMENT_TG);
-
-      foreach (var match in matches)
-      {
-        _db.Open();
-        match.dbInsert(_db);
-        _db.Close();
-      }
-    }
-
-    [TestMethod]
-    public async Task dbDeleteScheduledMatch()
-    {
-      List<ScheduledMatch> matches = await ScheduledMatch.GetScheduledMatchesFromTournamentId(TOURNAMENT_TG);
-
+      var lol = await _fapi.GetThing<RecentMatch>(4362560) as RecentMatch;
       _db.Open();
-
-      foreach (var match in matches)
-      {
-        match.dbInsert(_db);
-      }
-
-      foreach (var match in matches)
-      {
-        try
-        {
-          match.dbDelete(_db);
-        }
-        catch (Exception ex) { Console.WriteLine(ex); };
-      }
-
+      Fumbbl.ResolveBets(lol, _db);
       _db.Close();
     }
   }

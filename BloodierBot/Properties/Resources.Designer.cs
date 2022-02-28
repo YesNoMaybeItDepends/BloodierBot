@@ -61,6 +61,16 @@ namespace BloodierBot.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to DELETE FROM Bets
+        ///WHERE UserId = @UserId AND MatchId = @MatchId.
+        /// </summary>
+        public static string deleteBet {
+            get {
+                return ResourceManager.GetString("deleteBet", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to DELETE FROM RunningGames AS games
         ///WHERE games.Id = @RunningGameId;.
         /// </summary>
@@ -114,6 +124,25 @@ namespace BloodierBot.Properties {
         public static string GetRunningGamesFromDatabase {
             get {
                 return ResourceManager.GetString("GetRunningGamesFromDatabase", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to INSERT INTO Bets
+        ///(UserId, MatchId, AteamScore, BteamScore, Money)
+        ///VALUES
+        ///(@UserId, @MatchId, @AteamScore, @BteamScore, @Money)
+        ///ON CONFLICT (UserId, MatchId) DO UPDATE SET 
+        ///UserId = excluded.UserId, 
+        ///MatchId = excluded.MatchId, 
+        ///AteamScore = excluded.AteamScore,
+        ///BteamScore = excluded.BteamScore,
+        ///Money = excluded.Money;
+        ///.
+        /// </summary>
+        public static string insertOrUpdateBet {
+            get {
+                return ResourceManager.GetString("insertOrUpdateBet", resourceCulture);
             }
         }
         
@@ -210,6 +239,69 @@ namespace BloodierBot.Properties {
         public static string selectAllTournaments {
             get {
                 return ResourceManager.GetString("selectAllTournaments", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to SELECT * FROM Bets
+        ///WHERE UserId = @UserId AND MatchId = @MatchId.
+        /// </summary>
+        public static string selectBet {
+            get {
+                return ResourceManager.GetString("selectBet", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to SELECT * FROM Bets WHERE UserId = @UserId;.
+        /// </summary>
+        public static string selectBets {
+            get {
+                return ResourceManager.GetString("selectBets", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to SELECT * FROM Bets
+        ///WHERE MatchId = @MatchId
+        ///AND AteamScore &gt; BteamScore.
+        /// </summary>
+        public static string selectBetsA {
+            get {
+                return ResourceManager.GetString("selectBetsA", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to SELECT * FROM Bets
+        ///WHERE MatchId = @MatchId
+        ///AND BteamScore &gt; AteamScore.
+        /// </summary>
+        public static string selectBetsB {
+            get {
+                return ResourceManager.GetString("selectBetsB", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to SELECT * FROM Bets
+        ///WHERE MatchId = @MatchId
+        ///AND AteamScore = BteamScore.
+        /// </summary>
+        public static string selectBetsT {
+            get {
+                return ResourceManager.GetString("selectBetsT", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to SELECT Money
+        ///FROM Users
+        ///WHERE Id = @Id.
+        /// </summary>
+        public static string selectMoneyFromUser {
+            get {
+                return ResourceManager.GetString("selectMoneyFromUser", resourceCulture);
             }
         }
         

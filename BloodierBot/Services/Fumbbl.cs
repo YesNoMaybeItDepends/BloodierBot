@@ -209,6 +209,140 @@ namespace BloodierBot.Services
       }
     }
 
+    public static async void ResolveBets(RecentMatch match, IDbConnection db)
+    {
+      // Get all games in the same tournament
+      var tournamentGames = await ScheduledMatch.GetScheduledMatchesFromTournamentId(match.tournamentId.GetValueOrDefault());
+      
+      // Find the scheduled match 
+      ScheduledMatch? scheduledMatch = tournamentGames.Find(tourneygame => tourneygame.result?.id == match.RecentMatch_Id);
+      
+      // Determine winner (A, B, or T)
+      int? aTeamScore = scheduledMatch.result?.teams[0].score;
+      int? bTeamScore = scheduledMatch.result?.teams[1].score;
+      char winner = 
+        aTeamScore == bTeamScore ? 'T' : 
+        aTeamScore > bTeamScore ? 'A' : 'B';
+      
+      // Get winner and loser pots
+      List<Bet> winnerBets = new List<Bet>();
+      List<Bet> loserBets = new List<Bet>();
+        
+      DynamicParameters p = new DynamicParameters();
+      p.Add("MatchId", scheduledMatch.result?.id);
+      switch (winner)
+      {
+        case 'A':
+          winnerBets.AddRange((await db.QueryAsync<Bet>(Properties.Resources.selectBetsA, p)).ToList());
+          loserBets.AddRange((await db.QueryAsync<Bet>(Properties.Resources.selectBetsB, p)).ToList());
+          loserBets.AddRange((await db.QueryAsync<Bet>(Properties.Resources.selectBetsT, p)).ToList());
+          break;
+        case 'B':
+          winnerBets.AddRange((await db.QueryAsync<Bet>(Properties.Resources.selectBetsB, p)).ToList());
+          loserBetshttps://github.com/YesNoMaybeItDepends/BloodBot/blob/master/SQL.cs.AddRange((await db.QueryAsync<Bet>(Properties.Resources.selectBetsA, p)).ToList());
+          loserBets.AddRange((await db.QueryAsync<Bet>(Properties.Resources.selectBetsT, p)).ToList());
+          break;
+        case 'T':
+          winnerBets.AddRange((await db.QueryAsync<Bet>(Properties.Resources.selectBetsT, p)).ToList());
+          loserBets.AddRange((await db.QueryAsync<Bet>(Properties.Resources.selectBetsA, p)).ToList());
+          loserBets.AddRange((await db.QueryAsync<Bet>(Properties.Resources.selectBetsB, p)).ToList());
+          break;
+        default:
+          break;
+      }
+
+      int winnerPot = 0+winnerBets.Sum(bet => bet.Money);
+      int loserPot = 0+loserBets.Sum(bet => bet.Money);
+      int totalPot = 0+winnerPot + loserPot;
+
+      // No one bet
+      if (totalPot == 0)
+      {
+        Console.WriteLine("No one cared");
+      }
+      // Everyone lost
+      else if (winnerPot == 0)
+      {
+        Console.WriteLine("Everyone lost");
+        foreach (Bet bet in loserBets)
+        {
+          // Delete bet
+          await Bet.DeleteBet(bet.UserId, scheduledMatch.result.id, db);
+
+          // Broke check
+          // If broke and has no bets
+          if (await User.getMoney(bet.UserId,db) == 0 && (await Bet.GetBets(bet.UserId,db)).Count == 0)
+          {
+            Console.WriteLine($"{bet.UserId} went broke here's some money");
+            await User.updateMoney(bet.UserId, 50, db);
+          }
+          else
+          {
+            Console.WriteLine("lost money");
+          }
+        }
+      }
+      // Everyone won
+      else if (loserPot == 0)
+      {
+        foreach (Bet bet in winnerBets)
+        {
+          await User.updateMoney(bet.UserId, bet.Money, db);
+          await Bet.DeleteBet(bet.UserId, scheduledMatch.result.id, db);
+          Console.WriteLine("Everyone won so no one wins anything, you get your money back");
+        }
+      }
+      // Winners & Losers
+      else
+      {
+        
+        // Winners
+        foreach (Bet bet in winnerBets)
+        {
+          decimal percentPot = (int)Math.Round(((double)bet.Money / (double)winnerPot) * 100);
+          decimal moneyWon = (int)Math.Round(((double)percentPot * 0.01) * (double)loserPot);
+          // if the bet matches the score, double the reward
+          if (bet.AteamScore == aTeamScore && bet.BteamScore == bTeamScore)
+          {
+            int totalMoneyWon = (int)(moneyWon + bet.Money * 2);
+            await User.updateMoney(bet.UserId, totalMoneyWon, db);
+            await Bet.DeleteBet(bet.UserId, bet.MatchId, db);
+            Console.WriteLine("woah double money!!!! "+ totalMoneyWon);
+          }
+          // else normal reward
+          else
+          {
+            int totalMoneyWon = (int)(moneyWon + bet.Money);
+            await User.updateMoney(bet.UserId, totalMoneyWon, db);
+            await Bet.DeleteBet(bet.UserId, bet.MatchId, db);
+            Console.WriteLine("won normal money " + totalMoneyWon);
+          }
+        }
+
+        // Losers
+        foreach (Bet bet in loserBets)
+        {
+          // Delete bet
+          await Bet.DeleteBet(bet.UserId, scheduledMatch.result.id, db);
+
+          // Broke check
+          // If broke and has no bets
+          if (await User.getMoney(bet.UserId, db) == 0 && (await Bet.GetBets(bet.UserId, db)).Count == 0)
+          {
+            Console.WriteLine($"{bet.UserId} went broke here's some money");
+            await User.updateMoney(bet.UserId, 50, db);
+          }
+          else
+          {
+            Console.WriteLine("lost money");
+          }
+        }
+      }
+
+      Console.WriteLine("Finished resolving");
+      Console.WriteLine("send discord message here");
+    }
+
     public async Task<RecentMatch> FindRecentMatchFromRunningGame(RunningGame game)
     {
       Console.WriteLine("Finding recent match from running games");

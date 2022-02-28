@@ -39,6 +39,11 @@ namespace BloodierBot.Database.Models
       public string name { get; set; }
     }
 
+    public void getScheduledGames()
+    {
+
+    }
+
     public static async Task<Tournament> ApiGetById(int id)
     {
       Tournament? t = null;

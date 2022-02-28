@@ -4,11 +4,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Text.Json.Serialization;
+using BloodierBot;
 
 namespace BloodierBot.Database.Models
 {
-  public class RecentMatch
+  public class RecentMatch : IGetWithId
   {
+    public string ApiGetByIdLink { get;set; } = "https://fumbbl.com/api/match/get/";
+
     [JsonPropertyName("id")]
     public int RecentMatch_Id { get; set; }
     public int replayId { get; set; }
@@ -19,5 +22,19 @@ namespace BloodierBot.Database.Models
     public string conceded { get; set; }
     public RecentMatchTeam team1 { get; set; }
     public RecentMatchTeam team2 { get; set; }
+  
+    public enum AorB
+    {
+      A,
+      B
+    }
+
+    //public async Task<Dictionary<AorB, RecentMatchTeam>> mapTeamsToTournamentTeams()
+    //{
+    //  Dictionary<AorB, RecentMatchTeam> map = new Dictionary<AorB, RecentMatchTeam>();
+    //  Tournament tournament = await Tournament.ApiGetById(tournamentId.GetValueOrDefault());
+    //  tournament.
+    //  return map;
+    //}
   }
 }

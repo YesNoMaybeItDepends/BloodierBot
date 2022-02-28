@@ -77,14 +77,14 @@ namespace BloodierBot.Database.Models
       public char AorB { get; set; }
     }
 
-    public static async Task<List<ScheduledMatch>> GetScheduledMatches(int id)
+    public static async Task<List<ScheduledMatch>> GetScheduledMatchesFromTournamentId(int tournamentId)
     {
       FumbblApi fapi = new FumbblApi();
 
       string result = null;
       List<ScheduledMatch> scheduledMatches = new List<ScheduledMatch>();
 
-      result = await fapi.CallFumbblApi(API_GET_SCHEDULED_MATCHES + id);
+      result = await fapi.CallFumbblApi(API_GET_SCHEDULED_MATCHES + tournamentId);
 
       if (result == null)
       {
@@ -101,7 +101,7 @@ namespace BloodierBot.Database.Models
 
       foreach (ScheduledMatch match in scheduledMatches)
       {
-        match.tournamentId = id;
+        match.tournamentId = tournamentId;
         match.calculateId();
       }
 

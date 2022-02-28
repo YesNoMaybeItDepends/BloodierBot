@@ -84,6 +84,11 @@ namespace BloodierBot.Services
         return;
       }
 
+      if (!result.IsSuccess && result.Error != null)
+      {
+        await context.Channel.SendMessageAsync($"{result.ErrorReason}");
+        return;
+      }
       // Command failed to execute
       await context.Channel.SendMessageAsync($"Sorry, ... something went wrong -> []!");
     }

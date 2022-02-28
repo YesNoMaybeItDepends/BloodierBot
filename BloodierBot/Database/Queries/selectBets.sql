@@ -1,0 +1,1 @@
+SELECT * FROM Bets WHERE UserId = @UserId;

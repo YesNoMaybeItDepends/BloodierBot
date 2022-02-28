@@ -89,9 +89,35 @@ namespace BloodierBot.Modules
     }
 
     [Command("bet")]
-    public async Task bet()
+    public async Task bet(int matchId, string score, int money)
     {
-      await ReplyAsync("soon goyim, soon");
+      StringBuilder sb = new StringBuilder();
+      string[] scores = score.Split('-');
+      int AteamScore = int.Parse(scores[0]);
+      int BteamScore = int.Parse(scores[1]);
+      bool success = false;
+      if (money > 0)
+      {
+        using (IDbConnection db = new SQLiteConnection(_config["ConnectionString"]))
+        {
+          int? userMoney = await User.getMoney(Context.User.Id, db);
+          if (userMoney != null && (userMoney - money) >= 0)
+          {
+            await User.updateMoney(Context.User.Id, -money, db);
+            success = await Bet.MakeBet(Context.User.Id, matchId, AteamScore, BteamScore, money, db);
+            sb.AppendLine("Succesfully placed bet on BLABLABLA");
+          }
+          else
+          {
+            sb.AppendLine("You don't have enough money");
+          }
+        }
+      }
+      else
+      {
+        sb.AppendLine("Invalid amount of money");
+      }
+      await ReplyAsync(sb.ToString());
     }
 
     [Command("register")]
@@ -145,7 +171,16 @@ namespace BloodierBot.Modules
     [Command("bets")]
     public async Task bets()
     {
-      await ReplyAsync("soon goyim, soon");
+      StringBuilder sb = new StringBuilder();
+      using (IDbConnection db = new SQLiteConnection(_config["ConnectionString"]))
+      {
+        List<Bet> bets = await Bet.GetBets(Context.User.Id, db);
+        foreach (Bet bet in bets)
+        {
+          sb.AppendLine($"{bet.UserId} -> {bet.MatchId}: {bet.AteamScore}-{bet.BteamScore} for {bet.Money}");
+        }
+      }
+      await ReplyAsync(sb.ToString());
     }
 
     [Command("top")]
@@ -155,9 +190,26 @@ namespace BloodierBot.Modules
     }
 
     [Command("deletebet")]
-    public async Task deletebet()
+    public async Task deletebet(int matchId)
     {
-      await ReplyAsync("soon goyim, soon");
+      StringBuilder sb = new StringBuilder();
+      using (IDbConnection db = new SQLiteConnection(_config["ConnectionString"]))
+      {
+        Bet? bet = await Bet.GetBet(Context.User.Id, matchId, db);
+        if (bet != null)
+        {
+          if (await Bet.DeleteBet(Context.User.Id, matchId, db))
+          {
+            await User.updateMoney(Context.User.Id, bet.Money, db);
+            sb.AppendLine("Bet succesfully deleted");
+          }
+        }
+        else
+        {
+          sb.AppendLine("No bet with that Match ID");
+        }
+      }
+      await ReplyAsync(sb.ToString());
     }
 
     [Command("matchodds")]
@@ -169,7 +221,21 @@ namespace BloodierBot.Modules
     [Command("money")]
     public async Task money()
     {
-      await ReplyAsync("soon goyim, soon");
+      StringBuilder sb = new StringBuilder();
+      using (IDbConnection db = new SQLiteConnection(_config["ConnectionString"]))
+      {
+        int? money = null;
+        money = await User.getMoney(Context.User.Id, db);
+        if (money != null)
+        {
+          sb.AppendLine(money.ToString());
+        }
+        else
+        {
+          sb.AppendLine("Do you even have money lol");
+        }
+      }
+      await ReplyAsync(sb.ToString());
     }
 
     [Command("polytopia")]
