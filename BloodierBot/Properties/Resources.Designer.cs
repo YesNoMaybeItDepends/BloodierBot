@@ -91,12 +91,32 @@ namespace BloodierBot.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to DELETE FROM ScheduledGames
-        ///WHERE Id = @Id.
+        ///   Looks up a localized string similar to DELETE FROM Teams
+        ///WHERE TeamId IN (
+        ///	SELECT TeamId
+        ///	FROM ScheduledMatchTeams
+        ///	WHERE ScheduledMatchId = @Id
+        ///);
+        ///
+        ///DELETE FROM ScheduledMatchTeams
+        ///WHERE ScheduledMatchId = @Id;
+        ///
+        ///DELETE FROM ScheduledGames
+        ///WHERE Id = @Id;.
         /// </summary>
         public static string deleteScheduledMatch {
             get {
                 return ResourceManager.GetString("deleteScheduledMatch", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to DELETE FROM Users
+        ///WHERE Id = @Id.
+        /// </summary>
+        public static string deleteUser {
+            get {
+                return ResourceManager.GetString("deleteUser", resourceCulture);
             }
         }
         
@@ -124,6 +144,36 @@ namespace BloodierBot.Properties {
         public static string GetRunningGamesFromDatabase {
             get {
                 return ResourceManager.GetString("GetRunningGamesFromDatabase", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to First register yourself with !register. After registering you&apos;ll be given 100★ with which you can bet on any of the scheduled games. You can see what games are scheduled with the command !matches. You may bet on a match up until it starts, the moment it starts bets will be locked.
+        ///
+        ///You can either bet on the outcome of a game or the score. The outcome of a game is what team wins it, or if it&apos;s a tie. Outcome can either be A, B, or T. A is team A winning. B is team B winning. T is a tie. The score is the fi [rest of string was truncated]&quot;;.
+        /// </summary>
+        public static string HowIsBetFormed {
+            get {
+                return ResourceManager.GetString("HowIsBetFormed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Payouts are made proportionally. For example, if you wager $1 on outcome A and the total pot for outcome A 1 is $4, your proportion is 25%. This means that you are entitled to 25% of the outcome B+T pot, assuming that outcome A wins. Your proportion of the payout is calculated as follows: (Your bet/Total amount bet on the outcome). If you guess the score right, then your 25% of the outcome B+T pot is doubled..
+        /// </summary>
+        public static string HowIsPayoutCalculated {
+            get {
+                return ResourceManager.GetString("HowIsPayoutCalculated", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to When a match finishes, winners and losers are resolved through their bet outcome. Those who got the outcome right win, and those who didn&apos;t, lose. The winners who bet on the right score have the money corresponding to their % of the pot doubled. 
+        ///If there were winners but there were no losers, all the money is refunded..
+        /// </summary>
+        public static string HowIsWinnerBorn {
+            get {
+                return ResourceManager.GetString("HowIsWinnerBorn", resourceCulture);
             }
         }
         
@@ -222,7 +272,7 @@ namespace BloodierBot.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to INSERT INTO Users
+        ///   Looks up a localized string similar to INSERT OR IGNORE INTO Users
         ///(Id, Name, Money)
         ///VALUES
         ///(@Id, @Name, 100).
@@ -306,6 +356,27 @@ namespace BloodierBot.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to SELECT rg.Id
+        ///FROM RunningGames as rg
+        ///INNER JOIN RunningGameTeams as rgt ON rgt.RunningGameId = rg.Id
+        ///INNER JOIN ScheduledMatchTeams as smt ON smt.TeamId = rgt.Id
+        ///WHERE smt.TeamId = @Team1 
+        ///
+        ///INTERSECT 
+        ///
+        ///SELECT rg.Id
+        ///FROM RunningGames as rg
+        ///INNER JOIN RunningGameTeams as rgt ON rgt.RunningGameId = rg.Id
+        ///INNER JOIN ScheduledMatchTeams as smt ON smt.TeamId = rgt.Id
+        ///AND smt.TeamId = @Team2.
+        /// </summary>
+        public static string selectRunningGameFromScheduledTeams {
+            get {
+                return ResourceManager.GetString("selectRunningGameFromScheduledTeams", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to SELECT 
         ///games.Id AS RunningGame_Id,
         ///games.Half AS half,
@@ -330,6 +401,18 @@ namespace BloodierBot.Properties {
         public static string selectRunningGames {
             get {
                 return ResourceManager.GetString("selectRunningGames", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to SELECT * FROM ScheduledGames as sg
+        ///INNER JOIN ScheduledMatchTeams as smt on smt.ScheduledMatchId = sg.Id
+        ///INNER JOIN Teams as t on t.TeamId = smt.TeamId
+        ///WHERE sg.Id = @Id.
+        /// </summary>
+        public static string selectScheduledGame {
+            get {
+                return ResourceManager.GetString("selectScheduledGame", resourceCulture);
             }
         }
         

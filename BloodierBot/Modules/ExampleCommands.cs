@@ -49,7 +49,7 @@ namespace BloodierBot.Modules
       Environment.Exit(0);
     }
 
-    [Command("add tournament")]
+    [Command("addtournament")]
     [RequireOwner]
     public async Task AddTournament([Remainder] string args = null)
     {
@@ -85,39 +85,35 @@ namespace BloodierBot.Modules
     [Command("matches")]
     public async Task matches()
     {
-      await ReplyAsync("soon goyim, soon");
+      int tournamentId = int.Parse(_config["TournamentId"]);
+      List<ScheduledMatch> allMatches = await ScheduledMatch.GetScheduledMatchesFromTournamentId(tournamentId);
+      List<ScheduledMatch> pendingMatches = allMatches.Where(match => match.result == null).ToList();
+      List<Embed> embeds = await ScheduledMatch.EmbedPendingGames(pendingMatches);
+      
+      if (embeds.Count > 0)
+      {
+        foreach(Embed embed in embeds)
+        {
+          await ReplyAsync(embed: embed);
+        }
+      }
+      else
+      {
+        await ReplyAsync("No matches found");
+      }
     }
 
     [Command("bet")]
     public async Task bet(int matchId, string score, int money)
     {
-      StringBuilder sb = new StringBuilder();
-      string[] scores = score.Split('-');
-      int AteamScore = int.Parse(scores[0]);
-      int BteamScore = int.Parse(scores[1]);
-      bool success = false;
-      if (money > 0)
+      string result = "Couldn't establish connection to the database";
+      using (IDbConnection db = new SQLiteConnection(_config["ConnectionString"]))
       {
-        using (IDbConnection db = new SQLiteConnection(_config["ConnectionString"]))
-        {
-          int? userMoney = await User.getMoney(Context.User.Id, db);
-          if (userMoney != null && (userMoney - money) >= 0)
-          {
-            await User.updateMoney(Context.User.Id, -money, db);
-            success = await Bet.MakeBet(Context.User.Id, matchId, AteamScore, BteamScore, money, db);
-            sb.AppendLine("Succesfully placed bet on BLABLABLA");
-          }
-          else
-          {
-            sb.AppendLine("You don't have enough money");
-          }
-        }
+        db.Open();
+        result = await Bet.BetCommand(Context.User.Id, matchId, score, money, db);
+        db.Close();
       }
-      else
-      {
-        sb.AppendLine("Invalid amount of money");
-      }
-      await ReplyAsync(sb.ToString());
+      await ReplyAsync($"{MentionUtils.MentionUser(Context.User.Id)} {result}");
     }
 
     [Command("register")]
@@ -131,11 +127,11 @@ namespace BloodierBot.Modules
       {
         if (await user.RegisterUser(user, db))
         {
-          sb.AppendLine("Succesfully registered");
+          sb.AppendLine(MentionUtils.MentionUser(id)+" You have been succesfully registered");
         }
         else
         {
-          sb.AppendLine("You already registered");
+          sb.AppendLine(MentionUtils.MentionUser(id) + " You are already registered");
         }
       }
       await ReplyAsync(sb.ToString());
@@ -151,7 +147,7 @@ namespace BloodierBot.Modules
       {
         if (await User.updateMoney(Context.User.Id, money, db))
         {
-          sb.AppendLine("CA-CHING");
+          sb.AppendLine("CHA-CHING");
         }
         else
         {
@@ -162,10 +158,37 @@ namespace BloodierBot.Modules
     }
     
 
+    [Command("help")]
+    public async Task help()
+    {
+      EmbedBuilder eb = new EmbedBuilder();
+      eb.WithTitle("Help");
+      eb.WithColor(Discord.Color.DarkPurple);
+      eb.WithThumbnailUrl("https://i.imgur.com/QTzpQlD.png");
+      eb.AddField(":exclamation: faq", "Explains how the whole thing works and FAQs");
+      eb.AddField(":exclamation: help", "Shows this message");
+      eb.AddField(":exclamation: register", "Register yourself to start betting");
+      eb.AddField(":exclamation: matches", "Shows a list with all the scheduled matches as A-B and their ID");
+      eb.AddField(":exclamation: money", "Shows your money");
+      eb.AddField(":exclamation: bet <Match ID> <Score> <Money>", "Make a bet with the score on a match\nFor more information on how winners and losers are determined check !faq\n **#-#**: A-B\n**Example**: !bet 1 2-1 100");
+      eb.AddField(":exclamation: bets", "Shows a list with all your bets");
+      eb.AddField(":exclamation: deletebet <Match ID>", "Deletes a bet on the specified match and refunds your money");
+      Embed e = eb.Build();
+      await ReplyAsync(string.Empty, embed: e);
+    }
+
     [Command("faq")]
     public async Task faq()
     {
-      await ReplyAsync("soon goyim, soon");
+      EmbedBuilder eb = new EmbedBuilder();
+      eb.WithTitle("FAQ");
+      eb.WithColor(Discord.Color.DarkPurple);
+      eb.WithThumbnailUrl("https://i.imgur.com/QTzpQlD.png");
+      eb.AddField("How do I bet?", Properties.Resources.HowIsBetFormed);
+      eb.AddField("How are winners determined, and how does Outcome/Score matter?", Properties.Resources.HowIsWinnerBorn);
+      eb.AddField("How are payouts calculated?", Properties.Resources.HowIsPayoutCalculated);
+      Embed e = eb.Build();
+      await ReplyAsync(string.Empty, embed: e);
     }
 
     [Command("bets")]
@@ -174,7 +197,7 @@ namespace BloodierBot.Modules
       StringBuilder sb = new StringBuilder();
       using (IDbConnection db = new SQLiteConnection(_config["ConnectionString"]))
       {
-        List<Bet> bets = await Bet.GetBets(Context.User.Id, db);
+        List<Bet> bets = await Bet.GetUserBets(Context.User.Id, db);
         foreach (Bet bet in bets)
         {
           sb.AppendLine($"{bet.UserId} -> {bet.MatchId}: {bet.AteamScore}-{bet.BteamScore} for {bet.Money}");
@@ -195,7 +218,7 @@ namespace BloodierBot.Modules
       StringBuilder sb = new StringBuilder();
       using (IDbConnection db = new SQLiteConnection(_config["ConnectionString"]))
       {
-        Bet? bet = await Bet.GetBet(Context.User.Id, matchId, db);
+        Bet? bet = await Bet.GetUserMatchBet(Context.User.Id, matchId, db);
         if (bet != null)
         {
           if (await Bet.DeleteBet(Context.User.Id, matchId, db))
@@ -213,8 +236,52 @@ namespace BloodierBot.Modules
     }
 
     [Command("matchodds")]
-    public async Task matchodds()
+    public async Task matchodds(int matchid)
     {
+      StringBuilder sb = new StringBuilder();
+
+      using (IDbConnection db = new SQLiteConnection(_config["ConnectionString"]))
+      {
+        var match = await ScheduledMatch.GetScheduledMatchFromDatabase(matchid, db);
+        if (match != null)
+        {
+          List<Bet> betsA = await Bet.GetMatchBets(matchid, db, Bet.Winner.A);
+          List<Bet> betsB = await Bet.GetMatchBets(matchid, db, Bet.Winner.B);
+          List<Bet> betsT = await Bet.GetMatchBets(matchid, db, Bet.Winner.T);
+
+          decimal potA = 0;
+          decimal potB = 0;
+          decimal potT = 0;
+
+          foreach (Bet bet in betsA)
+          {
+            potA += bet.Money;
+          }
+
+          foreach (Bet bet in betsB)
+          {
+            potB += bet.Money;
+          }
+
+          foreach (Bet bet in betsT)
+          {
+            potT += bet.Money;
+          }
+
+          decimal totalPot = potA + potB + potT;
+
+          if (totalPot == 0)
+          {
+            sb.AppendLine();
+            sb.AppendLine($"**{match.teams[0].name}** vs **{match.teams[1].name}**");
+            sb.AppendLine();
+            sb.AppendLine($":regional_indicator_a: 0★");
+            sb.AppendLine($":regional_indicator_t: 0★");
+            sb.AppendLine($":regional_indicator_b: 0★");
+            sb.AppendLine();
+          }
+        }
+      }
       await ReplyAsync("soon goyim, soon");
     }
 
@@ -238,12 +305,37 @@ namespace BloodierBot.Modules
       await ReplyAsync(sb.ToString());
     }
 
+    [Command("mresolve")]
+    [RequireOwner]
+    public async Task mresolve(int matchid)
+    {
+      StringBuilder sb = new StringBuilder();
+
+      RecentMatch? match = await _fapi.GetThing<RecentMatch>(matchid) as RecentMatch;
+      if (match is null)
+      {
+        sb.AppendLine("couldn't find match");
+      }
+      else
+      {
+        using (IDbConnection db = new SQLiteConnection(_config["ConnectionString"]))
+        {
+          string resolve = await Fumbbl.ResolveBets(match!, db);
+          ulong righouseId = ulong.Parse(_config["Channel_Righouse"]);
+          var channelRighouse = await Context.Client.GetChannelAsync(righouseId) as SocketTextChannel;
+          await channelRighouse.SendMessageAsync(resolve);
+          sb.AppendLine(resolve);
+        }
+      }
+    }
+
     [Command("polytopia")]
     public async Task polytopia()
     {
       await ReplyAsync("based");
     }
 
+    [RequireOwner]
     [Command("test")]
     public async Task test()
     {

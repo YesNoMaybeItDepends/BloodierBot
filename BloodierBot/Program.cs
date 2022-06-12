@@ -23,6 +23,7 @@ public partial class Program
   private readonly IConfiguration _config;
   private static string _logLevel;
   private static bool _dbmode = false;
+  private bool _started = false;
 
   public Program()
   {
@@ -81,7 +82,11 @@ public partial class Program
       {
         Console.WriteLine("client ready");
         
-        Task.Run(async () => { await services.GetRequiredService<Fumbbl>().run(); });
+        if (!_started)
+        {
+          Task.Run(async () => { await services.GetRequiredService<Fumbbl>().run(); });
+          _started = true;
+        }
         Console.WriteLine("fumbbl done");
         return Task.CompletedTask;
       };

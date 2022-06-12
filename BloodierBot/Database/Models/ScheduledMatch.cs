@@ -16,15 +16,16 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using BloodierBot.Database.Models;
+using Discord;
 
 namespace BloodierBot.Database.Models
 {
   public class ScheduledMatch
   {
     public const string API_GET_SCHEDULED_MATCHES = "https://fumbbl.com/api/tournament/schedule/";
-    private long? _Id = null;
-    public long? Id 
-    { 
+    private int? _Id = null;
+    public int? Id
+    {
       get
       {
         if (_Id != null)
@@ -53,20 +54,25 @@ namespace BloodierBot.Database.Models
     //public Dictionary<int,string> teams { get; set; }
     public List<Team> teams { get; set; }
 
-    public long calculateId()
+    public int calculateId()
     {
       if (tournamentId != null && round != null && teams[0].id != null && teams[1].id != null)
       {
-        string tid = tournamentId.ToString().Substring(tournamentId.ToString().Count() - 3);
+        string tid = tournamentId.ToString().Substring(tournamentId.ToString().Count() - 2);
         string r = round.ToString();
-        string at = teams[0].id.ToString().Substring(teams[0].id.ToString().Count() - 3);
-        string bt = teams[1].id.ToString().Substring(teams[1].id.ToString().Count() - 3);
-        return long.Parse(tid+r+at+bt);
+        string at = teams[0].id.ToString().Substring(teams[0].id.ToString().Count() - 2);
+        string bt = teams[1].id.ToString().Substring(teams[1].id.ToString().Count() - 2);
+        return int.Parse(tid + r + at + bt);
       }
       else
       {
         return -1;
       }
+    }
+
+    public void manualId(int id)
+    {
+      _Id = id;
     }
 
     public class Team
@@ -96,7 +102,7 @@ namespace BloodierBot.Database.Models
       }
       else
       {
-        scheduledMatches = System.Text.Json.JsonSerializer.Deserialize<List<ScheduledMatch>>(result);
+        scheduledMatches = JsonSerializer.Deserialize<List<ScheduledMatch>>(result);
       }
 
       foreach (ScheduledMatch match in scheduledMatches)
@@ -106,6 +112,36 @@ namespace BloodierBot.Database.Models
       }
 
       return scheduledMatches;
+    }
+
+    public static async Task<ScheduledMatch?> GetScheduledMatchFromDatabase(int id, IDbConnection db)
+    {
+      ScheduledMatch? scheduledMatch = null;
+
+      DynamicParameters p = new DynamicParameters();
+      p.Add("Id", id);
+      dynamic dbmatch = (await db.QueryAsync<dynamic>(Properties.Resources.selectScheduledGame, p));
+      if (dbmatch != null)
+      {
+        int _id = (int)(dbmatch[0].Id);
+        int _tid = (int)(dbmatch[0].TournamentId);
+
+        int team1id = (int)(dbmatch[0].Id);
+        int team2id = (int)(dbmatch[1].Id);
+
+        char team1char = (char)(dbmatch[0].AorB[0]);
+        char team2char = (char)(dbmatch[1].AorB[0]);
+
+        Team team1 = new Team { id = team1id, name = dbmatch[0].Name , AorB = team1char};
+        Team team2 = new Team { id = team2id, name = dbmatch[1].Name, AorB = team2char};
+        
+        List<Team> teams = new List<Team>();
+        teams.Add(team1);
+        teams.Add(team2);
+        
+        scheduledMatch = new ScheduledMatch { _Id = _id, tournamentId = _tid, teams = teams };
+      }
+      return scheduledMatch;
     }
 
     public async void dbInsert(IDbConnection db)
@@ -163,6 +199,81 @@ namespace BloodierBot.Database.Models
       p.Add("Id", Id);
 
       await db.ExecuteAsync(Properties.Resources.deleteScheduledMatch, p);
+    }
+
+    public static async Task<List<Embed>> EmbedPendingGames(List<ScheduledMatch> matches)
+    {
+      List<Embed> embeds = new List<Embed>();
+      EmbedBuilder eb = new EmbedBuilder();
+      FumbblApi fapi = new FumbblApi();
+
+      int lenght = matches.Count;
+      int count = 0;
+      int embedCount = 1;
+      decimal maxEmbeds = Math.Round((decimal)lenght / 5);
+      maxEmbeds = maxEmbeds == 0 ? 1 : maxEmbeds;
+      eb.WithTitle($"Matches ({0}/{1})");
+      eb.WithColor(Color.DarkPurple);
+      eb.WithThumbnailUrl("https://i.imgur.com/QTzpQlD.png");
+      while (count < lenght)
+      {
+        Models.Team? teamA = await fapi.GetThing<Models.Team>(matches[count].teams[0].id) as Models.Team;
+        Models.Team? teamB = await fapi.GetThing<Models.Team>(matches[count].teams[1].id) as Models.Team;
+
+        if (teamA != null && teamB != null)
+        {
+          int? id = matches[count].Id;
+          string aTeamName = teamA.name;
+          string aTeamCoach = teamA.coach.name;
+          string aTeamRace = teamA.roster.name;
+          string bTeamName = teamB.name;
+          string bTeamCoach = teamB.coach.name;
+          string bTeamRace = teamB.roster.name;
+
+          eb.AddField($":id: {id}", $"**{aTeamName}** *vs* **{bTeamName}**", false);
+          eb.AddField(aTeamCoach, aTeamRace, true);
+          eb.AddField(bTeamCoach, bTeamRace, true);
+        }
+        else
+        {
+          return embeds = new List<Embed>();
+        }
+
+        if (count != 0 && count % 5 == 0)
+        {
+          embeds.Add(eb.Build());
+          eb = new EmbedBuilder();
+          embedCount++;
+          eb.WithTitle($"Matches ({0}/{1})");
+          eb.WithColor(Color.DarkPurple);
+          eb.WithThumbnailUrl("https://i.imgur.com/QTzpQlD.png");
+        }
+        count++;
+      }
+      if (eb.Fields.Count != 0)
+      {
+        embeds.Add(eb.Build());
+        return embeds;
+      }
+      return embeds = new List<Embed>();
+    }
+
+
+    public async Task<bool> isRunningDb(IDbConnection db)
+    {
+      bool isRunningDb = false;
+
+      DynamicParameters p = new DynamicParameters();
+      p.Add("Team1", teams[0].id);
+      p.Add("Team2", teams[1].id);
+
+      var lol = (await db.QueryAsync<dynamic>(Properties.Resources.selectRunningGameFromScheduledTeams, p));
+
+      if (lol.FirstOrDefault() != null)
+      {
+        isRunningDb = true;
+      }
+      return isRunningDb;
     }
   }
 }

@@ -1,3 +1,3 @@
 SELECT * FROM Bets
-WHERE MatchId = 4362560
+WHERE MatchId = @MatchId
 AND AteamScore = BteamScore

@@ -50,7 +50,7 @@ namespace BloodierBot.Services
       return result;
     }
 
-    public async Task<RecentMatch> GetRecentMatch(int id)
+    public async Task<RecentMatch?> GetRecentMatch(int id)
     {
       string? result = null;
       RecentMatch game = null;

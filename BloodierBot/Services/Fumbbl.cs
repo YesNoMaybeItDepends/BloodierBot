@@ -96,16 +96,36 @@ namespace BloodierBot.Services
     {
       while (true)
       {
-        StringBuilder sb = new StringBuilder();
+        // Debug info 
+        StringBuilder debugString = new StringBuilder();
         string newRunCycleString = "["+DateTime.UtcNow.AddHours(1).ToLongTimeString() + " DBG] : New run() cycle";
-        sb.AppendLine(newRunCycleString);
+        debugString.AppendLine(newRunCycleString);
         Console.WriteLine(newRunCycleString);
-        // Get CurrentGames from the DB
-        // Compare
-        // Find games to announce
-        // Find games to resolve
-        try
+        
+        // Sleep for 1 minute 
+        Console.WriteLine("[" + DateTime.UtcNow.AddHours(1).ToLongTimeString() + " DBG] : Sleeping...");
+        Thread.Sleep(60000);
+
+        // If the Discord client is currently disconnected or disconnecting, skip execution of this cycle
+        if (_client.ConnectionState == Discord.ConnectionState.Disconnected || _client.ConnectionState == Discord.ConnectionState.Disconnecting)
         {
+          Console.WriteLine("client not online, skipping this cycle");
+          continue;
+        }
+
+        // Get output channels
+        ulong resolvingId = ulong.Parse(_config["Channel_Resolve"]);
+        ulong righouseId = ulong.Parse(_config["Channel_Righouse"]);
+        ulong errorsId = ulong.Parse(_config["Channel_Error"]);
+        ulong debugChannelId = ulong.Parse(_config["Channel_Debug"]);
+        var channelRighouse = _client.GetChannel(righouseId) as SocketTextChannel;
+        var channelResolving = _client.GetChannel(resolvingId) as SocketTextChannel;
+        var channelErrors = _client.GetChannel(errorsId) as SocketTextChannel;
+        var debugChannel = _client.GetChannel(debugChannelId) as SocketTextChannel;
+
+        // Main Loop
+        try
+        { 
           using (IDbConnection db = new SQLiteConnection(_config["ConnectionString"]))
           {
             var livegames = await _fumbbl.GetRunningGames();
@@ -117,39 +137,56 @@ namespace BloodierBot.Services
             // Resolving games
             foreach (var game in gamesToResolve)
             {
-              sb.AppendLine($"{game.teams[0]?.name} vs {game.teams[1]?.name} / {game.tournament?.group}");
+              debugString.AppendLine($"{game.teams[0]?.name} vs {game.teams[1]?.name} / {game.tournament?.group}");
+
               // If we fail to resolve the game, try again in the next run
-              if (await ResolveGame(game) == true)
+              RecentMatch? recentMatch = await GetRecentMatchFromRunningGame(game);
+              if (recentMatch != null)
               {
+                // Announce game resolution
+                await channelResolving.SendMessageAsync(embed: EmbedRecentMatch(recentMatch));
+
+                // Announce bet resolution
+                string resolvedBets = await ResolveBets(recentMatch, db);
+                await channelRighouse.SendMessageAsync(resolvedBets);
                 game.DeleteRunningGame(db);
               }
             }
             
             // New games
+
+            // Get Id of all tracked tournaments
             List<Tournament> trackedTournaments = await Tournament.DbSelectAllTournaments(db);
             var trackedTournamentIds = trackedTournaments.Select(x => x.Tournament_Id).ToList();
             
+            // Insert all pending games from tracked tournamnets
+            foreach (var id in trackedTournamentIds)
+            {
+              List<ScheduledMatch> allMatches = await ScheduledMatch.GetScheduledMatchesFromTournamentId(id);
+              List<ScheduledMatch> scheduledMatches = allMatches.Where(match => match.result == null).ToList();
+              foreach (var scheduledMatch in scheduledMatches)
+              {
+                scheduledMatch.dbInsert(db);
+              }
+            }
+
             foreach (var game in gamesToAnnounce)
             {
               if (game.tournament != null && trackedTournamentIds.Contains(game.tournament.Tournament_Id))
               {
-                sb.AppendLine($"{game.teams[0].name} vs {game.teams[1].name} / {game.tournament?.group}");
+                debugString.AppendLine($"{game.teams[0].name} vs {game.teams[1].name} / {game.tournament?.group}");
                 await game.DbInsertRunningGame(db);
                 await AnnounceGame(game);
               }
             }
           }
-          ulong debugChannelId = ulong.Parse(_config["Channel_Debug"]);
-          var debugChannel = _client.GetChannel(debugChannelId) as SocketTextChannel;
-          await debugChannel.SendMessageAsync(sb.ToString());
+
+          await debugChannel.SendMessageAsync(debugString.ToString());
         }
         catch (Exception ex)
         {
           Console.WriteLine(ex.ToString());
         }
-
-        Console.WriteLine("["+DateTime.UtcNow.AddHours(1).ToLongTimeString()+" DBG] : Sleeping...");
-        Thread.Sleep(60000);
       }
     }
 
@@ -188,31 +225,29 @@ namespace BloodierBot.Services
 
     }
 
-    public async Task<bool> ResolveGame(RunningGame livegame)
-    {
-      ulong resolvingId = ulong.Parse(_config["Channel_Resolve"]);
-      ulong errorsId = ulong.Parse(_config["Channel_Error"]);
-      var channelResolving = _client.GetChannel(resolvingId) as SocketTextChannel;
-      var channelErrors = _client.GetChannel(errorsId) as SocketTextChannel;
-      var game = await FindRecentMatchFromRunningGame(livegame);
+    //public async Task<RecentMatch?> ResolveGame(RunningGame livegame)
+    //{
+    //  var game = await FindRecentMatchFromRunningGame(livegame);
       
-      if (game != null)
-      {
-        await channelResolving.SendMessageAsync(embed: EmbedRecentMatch(game));
-        return true;
-      }
-      else
-      {
-        // retry
-        await channelErrors.SendMessageAsync("@ItDepends WARNING ERROR OH GOD"+livegame.teams[0]+"/"+ livegame.teams[1]);
-        return false;
-      }
-    }
+    //  if (game != null)
+    //  {
+    //    await channelResolving.SendMessageAsync(embed: EmbedRecentMatch(game));
+    //    return game;
+    //  }
+    //  else
+    //  {
+    //    // retry
+    //    await channelErrors.SendMessageAsync("@ItDepends WARNING ERROR OH GOD"+livegame.teams[0]+"/"+ livegame.teams[1]);
+    //    return null;
+    //  }
+    //}
 
-    public static async void ResolveBets(RecentMatch match, IDbConnection db)
+    public static async Task<string> ResolveBets(RecentMatch match, IDbConnection db)
     {
+      StringBuilder sb = new StringBuilder();
+
       // Get all games in the same tournament
-      var tournamentGames = await ScheduledMatch.GetScheduledMatchesFromTournamentId(match.tournamentId.GetValueOrDefault());
+      var tournamentGames = await ScheduledMatch.GetScheduledMatchesFromTournamentId((int)match.tournamentId);
       
       // Find the scheduled match 
       ScheduledMatch? scheduledMatch = tournamentGames.Find(tourneygame => tourneygame.result?.id == match.RecentMatch_Id);
@@ -229,7 +264,7 @@ namespace BloodierBot.Services
       List<Bet> loserBets = new List<Bet>();
         
       DynamicParameters p = new DynamicParameters();
-      p.Add("MatchId", scheduledMatch.result?.id);
+      p.Add("MatchId", scheduledMatch.Id);
       switch (winner)
       {
         case 'A':
@@ -239,7 +274,7 @@ namespace BloodierBot.Services
           break;
         case 'B':
           winnerBets.AddRange((await db.QueryAsync<Bet>(Properties.Resources.selectBetsB, p)).ToList());
-          loserBetshttps://github.com/YesNoMaybeItDepends/BloodBot/blob/master/SQL.cs.AddRange((await db.QueryAsync<Bet>(Properties.Resources.selectBetsA, p)).ToList());
+          loserBets.AddRange((await db.QueryAsync<Bet>(Properties.Resources.selectBetsA, p)).ToList());
           loserBets.AddRange((await db.QueryAsync<Bet>(Properties.Resources.selectBetsT, p)).ToList());
           break;
         case 'T':
@@ -255,30 +290,35 @@ namespace BloodierBot.Services
       int loserPot = 0+loserBets.Sum(bet => bet.Money);
       int totalPot = 0+winnerPot + loserPot;
 
+      string aTeamName = scheduledMatch.teams[0].name;
+      string bTeamName = scheduledMatch.teams[1].name;
+      sb.AppendLine($"Match finished \n **{aTeamName}** vs **{bTeamName}** \n Score: {aTeamScore}-{bTeamScore}");
+
       // No one bet
       if (totalPot == 0)
       {
-        Console.WriteLine("No one cared");
+        sb.AppendLine("No one cared");
       }
       // Everyone lost
       else if (winnerPot == 0)
       {
-        Console.WriteLine("Everyone lost");
+        sb.AppendLine("Everyone lost");
         foreach (Bet bet in loserBets)
         {
+          string userMention = MentionUtils.MentionUser((ulong)bet.UserId);
           // Delete bet
-          await Bet.DeleteBet(bet.UserId, scheduledMatch.result.id, db);
+          await Bet.DeleteBet(bet.UserId, scheduledMatch.Id.GetValueOrDefault(), db);
 
           // Broke check
           // If broke and has no bets
-          if (await User.getMoney(bet.UserId,db) == 0 && (await Bet.GetBets(bet.UserId,db)).Count == 0)
+          if (await User.getMoney(bet.UserId,db) == 0 && (await Bet.GetUserBets(bet.UserId,db)).Count == 0)
           {
-            Console.WriteLine($"{bet.UserId} went broke here's some money");
+            sb.AppendLine($"{userMention} :skull_crossbones: {bet.Money}★ and broke! Here's 50★ \n");
             await User.updateMoney(bet.UserId, 50, db);
           }
           else
           {
-            Console.WriteLine("lost money");
+            sb.AppendLine($"{userMention} :skull: {bet.Money}★");
           }
         }
       }
@@ -287,9 +327,10 @@ namespace BloodierBot.Services
       {
         foreach (Bet bet in winnerBets)
         {
+          string userMention = MentionUtils.MentionUser((ulong)bet.UserId);
           await User.updateMoney(bet.UserId, bet.Money, db);
-          await Bet.DeleteBet(bet.UserId, scheduledMatch.result.id, db);
-          Console.WriteLine("Everyone won so no one wins anything, you get your money back");
+          await Bet.DeleteBet(bet.UserId, scheduledMatch.Id.GetValueOrDefault(), db);
+          sb.AppendLine($"{userMention} Everyone won so no one wins anything, you get your bet back {bet.Money}★");
         }
       }
       // Winners & Losers
@@ -299,6 +340,7 @@ namespace BloodierBot.Services
         // Winners
         foreach (Bet bet in winnerBets)
         {
+          string userMention = MentionUtils.MentionUser((ulong)bet.UserId);
           decimal percentPot = (int)Math.Round(((double)bet.Money / (double)winnerPot) * 100);
           decimal moneyWon = (int)Math.Round(((double)percentPot * 0.01) * (double)loserPot);
           // if the bet matches the score, double the reward
@@ -307,7 +349,7 @@ namespace BloodierBot.Services
             int totalMoneyWon = (int)(moneyWon + bet.Money * 2);
             await User.updateMoney(bet.UserId, totalMoneyWon, db);
             await Bet.DeleteBet(bet.UserId, bet.MatchId, db);
-            Console.WriteLine("woah double money!!!! "+ totalMoneyWon);
+            sb.AppendLine($"{userMention} :star2: {bet.Money}★*2 + {moneyWon}★ → **{totalMoneyWon}**★ \n");
           }
           // else normal reward
           else
@@ -315,39 +357,39 @@ namespace BloodierBot.Services
             int totalMoneyWon = (int)(moneyWon + bet.Money);
             await User.updateMoney(bet.UserId, totalMoneyWon, db);
             await Bet.DeleteBet(bet.UserId, bet.MatchId, db);
-            Console.WriteLine("won normal money " + totalMoneyWon);
+            sb.AppendLine($"{userMention} :star: {bet.Money}★ + {moneyWon}★ → **{totalMoneyWon}**★ \n");
           }
         }
 
         // Losers
         foreach (Bet bet in loserBets)
         {
+          string userMention = MentionUtils.MentionUser((ulong)bet.UserId);
           // Delete bet
-          await Bet.DeleteBet(bet.UserId, scheduledMatch.result.id, db);
+          await Bet.DeleteBet(bet.UserId, scheduledMatch.Id.GetValueOrDefault(), db);
 
           // Broke check
           // If broke and has no bets
-          if (await User.getMoney(bet.UserId, db) == 0 && (await Bet.GetBets(bet.UserId, db)).Count == 0)
+          if (await User.getMoney(bet.UserId, db) == 0 && (await Bet.GetUserBets(bet.UserId, db)).Count == 0)
           {
-            Console.WriteLine($"{bet.UserId} went broke here's some money");
+            sb.AppendLine($"{userMention} :skull_crossbones: {bet.Money}★ and broke! Here's 50★ \n");
             await User.updateMoney(bet.UserId, 50, db);
           }
           else
           {
-            Console.WriteLine("lost money");
+            sb.AppendLine($"{userMention} :skull: {bet.Money}★ \n");
           }
         }
       }
-
       Console.WriteLine("Finished resolving");
-      Console.WriteLine("send discord message here");
+      return sb.ToString();
     }
 
-    public async Task<RecentMatch> FindRecentMatchFromRunningGame(RunningGame game)
+    public async Task<RecentMatch?> GetRecentMatchFromRunningGame(RunningGame game)
     {
       Console.WriteLine("Finding recent match from running games");
 
-      RecentMatch recentGame = null;
+      RecentMatch? recentGame = null;
 
       var matchHistory = await _fumbbl.GetTeamMatches(game.teams[0].RunningGameTeam_Id);
       if (matchHistory != null)
@@ -376,6 +418,10 @@ namespace BloodierBot.Services
       }
       if (recentGame != null)
       {
+        if (game.tournament != null)
+        {
+          recentGame.tournamentId = game.tournament.Tournament_Id;
+        }
         return recentGame;
       }
       else

@@ -132,6 +132,9 @@ WHERE teams.RunningGameId = @RunningGameId</value>
   <data name="deleteScheduledMatch" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Database\Queries\deleteScheduledMatch.sql;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
+  <data name="deleteUser" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Database\Queries\deleteUser.sql;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
   <data name="GetRunningGamesFromDatabase" xml:space="preserve">
     <value>SELECT 
 games.Id AS RunningGame_Id,
@@ -154,6 +157,20 @@ FROM RunningGames AS games
 INNER JOIN RunningGameTeams AS teams ON (teams.RunningGameId = games.Id) 
 LEFT OUTER JOIN RunningGameTournaments AS tourneys ON (tourneys.Id = games.RunningGameTournamentId) 
 ORDER BY games.Id</value>
+  </data>
+  <data name="HowIsBetFormed" xml:space="preserve">
+    <value>First register yourself with !register. After registering you'll be given 100★ with which you can bet on any of the scheduled games. You can see what games are scheduled with the command !matches. You may bet on a match up until it starts, the moment it starts bets will be locked.
+
+You can either bet on the outcome of a game or the score. The outcome of a game is what team wins it, or if it's a tie. Outcome can either be A, B, or T. A is team A winning. B is team B winning. T is a tie. The score is the final score of the game, it has the format #-#, the first number being team A and the second number being team B. Betting on the score of a game automatically includes the outcome, for example, if you bet on the score 2-0, your bet automatically includes the outcome A. 
+
+To place a bet, use the !bet &amp;lt;ID&amp;gt; &amp;lt;Outcome/Score&amp;gt; &amp;lt;Money&amp;gt; command. &amp;lt;ID&amp;gt; is the ID of the match, which you can get from !matches. &amp;lt;Outcome&amp;gt;</value>
+  </data>
+  <data name="HowIsPayoutCalculated" xml:space="preserve">
+    <value>Payouts are made proportionally. For example, if you wager $1 on outcome A and the total pot for outcome A 1 is $4, your proportion is 25%. This means that you are entitled to 25% of the outcome B+T pot, assuming that outcome A wins. Your proportion of the payout is calculated as follows: (Your bet/Total amount bet on the outcome). If you guess the score right, then your 25% of the outcome B+T pot is doubled.</value>
+  </data>
+  <data name="HowIsWinnerBorn" xml:space="preserve">
+    <value>When a match finishes, winners and losers are resolved through their bet outcome. Those who got the outcome right win, and those who didn't, lose. The winners who bet on the right score have the money corresponding to their % of the pot doubled. 
+If there were winners but there were no losers, all the money is refunded.</value>
   </data>
   <data name="insertOrUpdateBet" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Database\Queries\insertOrUpdateBet.sql;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
@@ -200,8 +217,14 @@ ORDER BY games.Id</value>
   <data name="selectMoneyFromUser" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Database\Queries\selectMoneyFromUser.sql;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
+  <data name="selectRunningGameFromScheduledTeams" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Database\Queries\selectRunningGameFromScheduledTeams.sql;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
   <data name="selectRunningGames" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Database\Queries\selectRunningGames.sql;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="selectScheduledGame" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Database\Queries\selectScheduledGame.sql;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
   <data name="String1" xml:space="preserve">
     <value>SELECT 

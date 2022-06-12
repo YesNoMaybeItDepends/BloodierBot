@@ -37,6 +37,22 @@ namespace BloodierBot.Database.Models
       return result;
     }
 
+    public async Task<bool> DeleteUser(IDbConnection db)
+    {
+      DynamicParameters p = new DynamicParameters();
+      p.Add("Id", Id);
+      bool result = false;
+      try
+      {
+        result = await db.ExecuteAsync(Properties.Resources.deleteUser, p) == 1 ? true : false;
+      }
+      catch (Exception ex)
+      {
+        Console.WriteLine(ex);
+      }
+      return result;
+    }
+
     public static async Task<bool> updateMoney(ulong userId, int money, IDbConnection db)
     {
       DynamicParameters p = new DynamicParameters();
@@ -87,6 +103,11 @@ namespace BloodierBot.Database.Models
       return money;
     }
 
+    /// <summary>
+    /// DOES NOT WORK, FIXME
+    /// </summary>
+    /// <param name="db"></param>
+    /// <returns></returns>
     public async Task<int?> getMoney(IDbConnection db)
     {
       DynamicParameters p = new DynamicParameters();

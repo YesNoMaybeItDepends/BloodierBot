@@ -17,15 +17,16 @@ using System.Text.Json;
 namespace Tests
 {
   [TestClass]
-  public class ScheduledGame_Tests
+  public class ScheduledMatch_Tests
   {
     private IConfiguration _config;
     private IDiscordClient _client;
     private FumbblApi _fapi;
     private SQLiteConnection _db;
 
-    private int TOURNAMENT_TG = 56971;
-    
+    private int TOURNAMENT_TG_OLD = 56971;
+    private int TOURNAMENT_TG = 57282;
+
     [TestInitialize]
     public void setup()
     {
@@ -55,7 +56,21 @@ namespace Tests
     }
 
     [TestMethod]
-    public async Task dbInsert_Works()
+    public async Task GetPendingScheduledMatches_Works()
+    {
+      List<ScheduledMatch> matches = await ScheduledMatch.GetScheduledMatchesFromTournamentId(TOURNAMENT_TG);
+
+      foreach (var match in matches)
+      {
+        if (match.result == null)
+        {
+          Helpers.PrintObject(match);
+        }
+      }
+    }
+
+    [TestMethod]
+    public async Task dbInsert_AllGames_Works()
     {
       List<ScheduledMatch> matches = await ScheduledMatch.GetScheduledMatchesFromTournamentId(TOURNAMENT_TG);
 
@@ -65,6 +80,32 @@ namespace Tests
         match.dbInsert(_db);
         _db.Close();
       }
+    }
+
+    [TestMethod]
+    public async Task dbInsert_PendingGames_Works()
+    {
+      List<ScheduledMatch> matches = await ScheduledMatch.GetScheduledMatchesFromTournamentId(TOURNAMENT_TG);
+      _db.Open();
+      foreach (var match in matches)
+      {
+        if (match.result != null)
+        {
+          match.dbInsert(_db);
+        }
+        
+      }
+      _db.Close();
+    }
+
+    [TestMethod]
+    public async Task GetScheduledMatchFromDatabase()
+    {
+      _db.Open();
+      ScheduledMatch? lol = await ScheduledMatch.GetScheduledMatchFromDatabase(6414756, _db);
+      Helpers.PrintObject(lol);
+      Assert.AreEqual(6414756, lol.Id);
+      _db.Close();
     }
 
     [TestMethod]
