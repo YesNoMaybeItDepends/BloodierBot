@@ -86,13 +86,6 @@ public partial class Program
 
         Console.WriteLine("Testing database connection");
         Console.WriteLine("Connectiong string: "+ _config["ConnectionString"].ToString());
-        using (IDbConnection db = new SQLiteConnection(_config["ConnectionString"]))
-        {
-          db.Open();
-          Console.WriteLine("np");
-          db.Close();
-        }
-        Console.WriteLine("Database connection succesful");
 
         if (!_started)
         {
