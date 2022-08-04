@@ -16,6 +16,8 @@ using BloodierBot.Services;
 using Serilog;
 using Microsoft.Extensions.Logging;
 using BloodierBot.Database;
+using System.Data;
+using System.Data.SQLite;
 
 public partial class Program
 {
@@ -49,7 +51,7 @@ public partial class Program
       }
     }
 
-    Log.Logger = new LoggerConfiguration()
+      Log.Logger = new LoggerConfiguration()
       .WriteTo.File("Logs/BloodierBot.log", rollingInterval: RollingInterval.Day)
       .WriteTo.Console()
       .CreateLogger();
@@ -81,7 +83,17 @@ public partial class Program
       _client.Ready += () =>
       {
         Console.WriteLine("client ready");
-        
+
+        Console.WriteLine("Testing database connection");
+        Console.WriteLine("Connectiong string: "+ _config["ConnectionString"].ToString());
+        using (IDbConnection db = new SQLiteConnection(_config["ConnectionString"]))
+        {
+          db.Open();
+          Console.WriteLine("np");
+          db.Close();
+        }
+        Console.WriteLine("Database connection succesful");
+
         if (!_started)
         {
           Task.Run(async () => { await services.GetRequiredService<Fumbbl>().run(); });
