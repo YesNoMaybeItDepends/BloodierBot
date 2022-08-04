@@ -137,10 +137,12 @@ namespace BloodierBot.Services
     
       if (result == null)
       {
+        // TODO Fumbbl Error
         return recentMatches;
       }
       else if (IsError(result))
       {
+        // TODO API Error
         return recentMatches;
       }
       else
@@ -164,10 +166,12 @@ namespace BloodierBot.Services
 
       if (result == null)
       {
+        // TODO Fumbbl Error
         return null;
       }
       else if (IsError(result))
       {
+        // TODO API Error
         return null;
       }
       else

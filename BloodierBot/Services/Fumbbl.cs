@@ -41,7 +41,6 @@ namespace BloodierBot.Services
     // TODO Should be on client ready async
     public async Task InitializeAsync()
     {
-      // TODO what does this do?
       await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
     }
 
