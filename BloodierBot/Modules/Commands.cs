@@ -20,14 +20,14 @@ using Microsoft.Extensions.Logging;
 
 namespace BloodierBot.Modules
 {
-  public class ExampleCommands : ModuleBase
+  public class Commands : ModuleBase
   {
     private readonly IConfiguration _config;
     private readonly ILogger _logger;
     private readonly FumbblApi _fapi;
 
     // Constructor
-    public ExampleCommands(IServiceProvider services)
+    public Commands(IServiceProvider services)
     {
       _config = services.GetRequiredService<IConfiguration>();
       _logger = services.GetRequiredService<ILogger<CommandHandler>>();
@@ -147,7 +147,7 @@ namespace BloodierBot.Modules
       {
         if (await User.updateMoney(Context.User.Id, money, db))
         {
-          sb.AppendLine("CHA-CHING");
+          sb.AppendLine("KA-CHING");
         }
         else
         {
@@ -209,7 +209,7 @@ namespace BloodierBot.Modules
     [Command("top")]
     public async Task top()
     {
-      await ReplyAsync("soon goyim, soon");
+      await ReplyAsync("soon");
     }
 
     [Command("deletebet")]
@@ -282,7 +282,7 @@ namespace BloodierBot.Modules
           }
         }
       }
-      await ReplyAsync("soon goyim, soon");
+      await ReplyAsync("soon");
     }
 
     [Command("money")]
@@ -299,7 +299,7 @@ namespace BloodierBot.Modules
         }
         else
         {
-          sb.AppendLine("Do you even have money lol");
+          sb.AppendLine("You don't have any money, did you register?");
         }
       }
       await ReplyAsync(sb.ToString());
